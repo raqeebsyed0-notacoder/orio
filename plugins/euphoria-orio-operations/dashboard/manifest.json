@@ -1,0 +1,8 @@
+{
+  "name": "euphoria-orio-operations",
+  "label": "ORIO Operations",
+  "description": "ORIO Operations demo (Innovex pilot). Local SQLite demo data from the Sep 19 Morning Report. No external actions.",
+  "icon": "dashboard",
+  "version": "0.1.0",
+  "api": "plugin_api.py"
+}

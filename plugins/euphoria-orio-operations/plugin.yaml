@@ -1,0 +1,7 @@
+name: euphoria-orio-operations
+version: 0.1.0
+description: "ORIO Operations demo for the Innovex 90-Day AI Operations Pilot. Local demo data only, no external actions. Vertical slice: Sep 19 Morning Report intelligence, approval-gated actions, evidence, exceptions, history."
+author: Euphoria Experiences
+kind: standalone
+requires_hermes: ">=0.19"
+platforms: []
