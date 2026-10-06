@@ -155,11 +155,16 @@ function ensureStyles() {
   @media (prefers-reduced-motion: reduce) { .${ID}-navbtn, .${ID}-table tbody tr td { transition:none; } }
   .${ID}-todaymain { min-width:0; }
   .${ID}-legline > *, .${ID}-stagerowline > *, .${ID}-legrow > *, .${ID}-rowline > * { min-width:0; }
-  .${ID}-legline > span:last-child { text-align:right; overflow-wrap:anywhere; }
+  .${ID}-legline { gap:.5rem; }
+  .${ID}-legline > span:last-child { text-align:right; overflow-wrap:anywhere; white-space:normal; }
   .${ID}-stagerowline > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .${ID}-legrow > span:nth-child(2) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .${ID}-legrow > span:nth-child(2) { overflow-wrap:anywhere; }
   .${ID}-rowline > * { overflow-wrap:anywhere; }
   .${ID}-stagerow[data-active="1"] { color:var(--ui-accent); font-weight:700; }
+  .${ID}-rail { position:static; align-self:start; }
+  .${ID}-panel { overflow:hidden; }
+  .${ID}-stagerowline { gap:.5rem; }
+  .${ID}-stagerowline > span:last-child { flex-shrink:0; }
   `
   const el = document.createElement('style')
   el.setAttribute('data-plugin', ID)
@@ -563,7 +568,18 @@ function ActionsView({ openJob }) {
                   className: `${ID}-panel`, key: 'state',
                   children: [
                     jsx('div', { className: `${ID}-panelttl`, children: 'Decision states, tap to filter' }),
-                    jsx(Donut, { parts: parts, label: 'Actions by state' })
+                    jsx('div', {
+                      className: `${ID}-legend`,
+                      children: parts.map(p => jsx('button', {
+                        key: p.id, className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
+                        onClick: p.onPick, title: 'Filter actions: ' + p.label,
+                        children: [
+                          jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: p.opacity } }),
+                          jsx('span', { style: { flex: 1 }, children: p.label }),
+                          jsx('span', { className: `${ID}-mono`, children: String(p.value) })
+                        ]
+                      }))
+                    })
                   ]
                 }),
                 jsx('div', {
@@ -876,7 +892,18 @@ function ExceptionsView({ openJob }) {
                 className: `${ID}-panel`, key: 'state',
                 children: [
                   jsx('div', { className: `${ID}-panelttl`, children: 'Resolution, tap to filter' }),
-                  jsx(Donut, { parts: parts, label: 'Exceptions by resolution' })
+                  jsx('div', {
+                    className: `${ID}-legend`,
+                    children: parts.map(p => jsx('button', {
+                      key: p.id, className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
+                      onClick: p.onPick, title: 'Filter exceptions: ' + p.label,
+                      children: [
+                        jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: p.opacity } }),
+                        jsx('span', { style: { flex: 1 }, children: p.label }),
+                        jsx('span', { className: `${ID}-mono`, children: String(p.value) })
+                      ]
+                    }))
+                  })
                 ]
               })
             })
