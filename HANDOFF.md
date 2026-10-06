@@ -15,9 +15,10 @@ Nothing invented. No external actions exist anywhere in the code.
 ## Paths
 
 - Source of truth: `D:/12_projects/Innovex (ajeez)/orio-operations-plugin/`
-  - `plugins/euphoria-orio-operations/desktop/plugin.js` — all UI (single ESM file)
-  - `plugins/euphoria-orio-operations/dashboard/plugin_api.py` — backend (FastAPI, stdlib only)
-  - `plugins/euphoria-orio-operations/plugin.yaml` + `dashboard/manifest.json` + `__init__.py` (no-op register)
+  (repo: https://github.com/raqeebsyed0-notacoder/orio.git, package at root)
+  - `desktop/plugin.js` — all UI (single ESM file)
+  - `dashboard/plugin_api.py` — backend (FastAPI, stdlib only)
+  - `plugin.yaml` + `dashboard/manifest.json` + `__init__.py` (no-op register)
   - `data/build_db.py` + `data/mr_index.json` + `data/seed_cases.json` — DB build
   - `tests/run_api.py` — 14-check backend suite (throwaway home)
   - `README.md`, `DEMO_WALKTHROUGH.md` (10-scene recording flow), `DESIGN.md` (UI contract)
@@ -92,7 +93,7 @@ Nothing invented. No external actions exist anywhere in the code.
 cd "D:/12_projects/Innovex (ajeez)/orio-operations-plugin"
 git pull --rebase && git push
 # edit UI, then sync both copies + syntax check
-SRC="D:/12_projects/Innovex (ajeez)/orio-operations-plugin/plugins/euphoria-orio-operations/desktop/plugin.js"
+SRC="D:/12_projects/Innovex (ajeez)/orio-operations-plugin/desktop/plugin.js"
 DST1="C:/Users/THinkPad/AppData/Local/hermes/plugins/euphoria-orio-operations/desktop/plugin.js"
 DST2="C:/Users/THinkPad/AppData/Local/hermes/desktop-plugins/euphoria-orio-operations/plugin.js"
 cp "$SRC" "$DST1" && mkdir -p "$(dirname "$DST2")" && cp "$SRC" "$DST2"
