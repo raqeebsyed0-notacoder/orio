@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 HERE = Path(__file__).resolve().parent
 PKG = HERE.parent
-sys.path.insert(0, str(PKG / 'plugins' / 'euphoria-orio-operations' / 'dashboard'))
+sys.path.insert(0, str(PKG / 'dashboard'))
 sys.path.insert(0, str(PKG / 'data'))
 
 os.environ['HERMES_HOME'] = tempfile.mkdtemp(prefix='orio-test-home-')

@@ -7,7 +7,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PKG = HERE.parent
-sys.path.insert(0, str(PKG / 'plugins' / 'euphoria-orio-operations' / 'dashboard'))
+sys.path.insert(0, str(PKG / 'dashboard'))
 sys.path.insert(0, str(PKG / 'data'))
 os.environ['HERMES_HOME'] = tempfile.mkdtemp(prefix='orio-test-home-')
 
@@ -62,7 +62,7 @@ em = c.post(B + '/drafts/email', json={'job': 'hp701'}).json()
 check('email-never-sends', em['sent'] is False and 'MISSING' in em['body'])
 csv = c.get(B + '/export.csv')
 check('csv', csv.status_code == 200 and csv.text.count('\n') > 292)
-src = (PKG / 'plugins' / 'euphoria-orio-operations' / 'dashboard' / 'plugin_api.py').read_text()
+src = (PKG / 'dashboard' / 'plugin_api.py').read_text()
 check('no-net', all(('import ' + m) not in src and ('from ' + m) not in src
                     for m in ['socket', 'urllib', 'httpx', 'requests', 'smtplib', 'email.mime']))
 print('FAILURES:', fails if fails else 'none')
