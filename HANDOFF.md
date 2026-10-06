@@ -88,6 +88,9 @@ Nothing invented. No external actions exist anywhere in the code.
 ## Resume commands
 
 ```bash
+# git repo (source of truth): https://github.com/raqeebsyed0-notacoder/orio.git
+cd "D:/12_projects/Innovex (ajeez)/orio-operations-plugin"
+git pull --rebase && git push
 # edit UI, then sync both copies + syntax check
 SRC="D:/12_projects/Innovex (ajeez)/orio-operations-plugin/plugins/euphoria-orio-operations/desktop/plugin.js"
 DST1="C:/Users/THinkPad/AppData/Local/hermes/plugins/euphoria-orio-operations/desktop/plugin.js"
