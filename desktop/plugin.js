@@ -153,6 +153,13 @@ function ensureStyles() {
     .${ID}-tiles { grid-template-columns:repeat(2, 1fr); }
   }
   @media (prefers-reduced-motion: reduce) { .${ID}-navbtn, .${ID}-table tbody tr td { transition:none; } }
+  .${ID}-todaymain { min-width:0; }
+  .${ID}-legline > *, .${ID}-stagerowline > *, .${ID}-legrow > *, .${ID}-rowline > * { min-width:0; }
+  .${ID}-legline > span:last-child { text-align:right; overflow-wrap:anywhere; }
+  .${ID}-stagerowline > span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .${ID}-legrow > span:nth-child(2) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .${ID}-rowline > * { overflow-wrap:anywhere; }
+  .${ID}-stagerow[data-active="1"] { color:var(--ui-accent); font-weight:700; }
   `
   const el = document.createElement('style')
   el.setAttribute('data-plugin', ID)
@@ -679,7 +686,7 @@ function RigsView({ openRig }) {
                     jsx('div', {
                       children: stages.map(s => jsx('button', {
                         key: s.stage, className: `${ID}-stagerow`,
-                        'data-active': undefined,
+                        'data-active': fStage === s.stage ? '1' : '0',
                         onClick: () => setFStage(fStage === s.stage ? 'all' : s.stage),
                         title: 'Filter index: ' + s.stage,
                         children: [
@@ -952,7 +959,8 @@ function EvidenceView() {
                         const n = job.evidence.filter(e => e.status === s).length
                         return jsx('button', {
                           key: s, className: `${ID}-stagerow`,
-                          onClick: () => setFEv(fEv === s ? 'all' : s),
+                                                    'data-active': fEv === s ? '1' : '0',
+                                                    onClick: () => setFEv(fEv === s ? 'all' : s),
                           title: 'Filter entries: ' + s,
                           children: [
                             jsxs('span', {
@@ -1097,8 +1105,9 @@ function HistoryView() {
                     jsx('div', {
                       children: stages.map(s => jsx('button', {
                         key: s.stage, className: `${ID}-stagerow`,
-                        onClick: () => setFStage(fStage === s.stage ? 'all' : s.stage),
-                        title: 'Filter timeline: ' + s.stage,
+                                                'data-active': fStage === s.stage ? '1' : '0',
+                                                onClick: () => setFStage(fStage === s.stage ? 'all' : s.stage),
+                                                title: 'Filter timeline: ' + s.stage,
                         children: [
                           jsxs('span', {
                             className: `${ID}-stagerowline`,
@@ -1195,7 +1204,8 @@ function ExpansionView() {
                   jsx('div', {
                     children: companies.map(c => jsx('button', {
                       key: c.company, className: `${ID}-stagerow`,
-                      onClick: () => setFText(fText === c.company ? '' : c.company),
+                                            'data-active': fText === c.company ? '1' : '0',
+                                            onClick: () => setFText(fText === c.company ? '' : c.company),
                       title: 'Filter table: ' + c.company,
                       children: [
                         jsxs('span', {
@@ -1336,7 +1346,7 @@ function JobDialog({ jobId, rigWell, onClose }) {
                     ]
                   }) : jsxs('div', {
                     children: [
-                      jsx('div', { className: `${ID}-sub`, children: 'Stage: ' + block.stage + '. Monitoring.' }),
+                      jsx('div', { className: `${ID}-sub`, children: 'Stage: ' + (block.stage || 'n/a') + '. Monitoring.' }),
                       jsx('div', { className: `${ID}-kv`, children: 'Last 24h: ' + (block.last24 || 'n/a') }),
                       jsx('div', { className: `${ID}-kv`, children: 'Next 24h: ' + (block.next24 || 'n/a') })
                     ]
