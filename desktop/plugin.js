@@ -1184,7 +1184,6 @@ function ExpansionView() {
                     ]
                   })
                 })
-              ]
             }),
             jsx('aside', {
               className: `${ID}-rail`,
