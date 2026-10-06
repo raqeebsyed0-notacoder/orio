@@ -60,6 +60,14 @@ Nothing invented. No external actions exist anywhere in the code.
 7. Install ONLY via `hermes plugins install <repo> + enable`. Manual copies
    into `plugins/` are pruned by plugin sync (wiped 2026-10-06 04:48) and
    dropped from `plugins.enabled`. Registered installs survive restarts.
+8. Rails stay STATIC (`position:static; align-self:start`), never sticky:
+   sticky rails drift out of line with content on scrolled pages (flagged
+   2026-10-06 on Rigs/History/Evidence). Panels get `overflow:hidden` so
+   nothing ever escapes; rail values wrap (`white-space:normal` beats the
+   `-mono` nowrap), legend labels wrap, only bar-row names ellipsize.
+9. Donut only where the distribution informs (Today, Lifecycle). Single-ring
+   donuts (Actions, Exceptions) become tap-to-filter legend rows with the
+   same onPick — same function, no lost-looking ring. (2026-10-06.)
 
 ## Open items
 
