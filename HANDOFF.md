@@ -52,6 +52,14 @@ Nothing invented. No external actions exist anywhere in the code.
    `web_server_dashboard.py` mount + runtime gate.
 5. Never claim visual PASS without a Founder screenshot. Byte checks are not
    render checks.
+6. `node --check` DOES NOT validate this UI file: it parses CommonJS and
+   gave a false clean on v6 while the renderer (ESM) threw
+   `SyntaxError: Unexpected token ']'` on every load. Gate every UI edit
+   with `node --input-type=module --check`. (Root-caused 2026-10-06:
+   stray `]` at old line 1187 in ExpansionView, fixed in 0802c0f.)
+7. Install ONLY via `hermes plugins install <repo> + enable`. Manual copies
+   into `plugins/` are pruned by plugin sync (wiped 2026-10-06 04:48) and
+   dropped from `plugins.enabled`. Registered installs survive restarts.
 
 ## Open items
 
