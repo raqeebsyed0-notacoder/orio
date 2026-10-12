@@ -1,16 +1,134 @@
-# Handoff — ORIO Operations demo plugin (Innovex 90-Day AI Operations Pilot)
+# Handoff — ORIO Operations plugin (Innovex pilot → real product)
 
-Date: 2026-10-06. Status: installed, backend healthy, UI live in Hermes Desktop.
-Final visual sign-off by Founder still pending.
+Last updated: 2026-10-12 (Phase 1). Earlier: 2026-10-06 (demo baseline).
+
+## Current status
+
+**Phase 1 shipped: multi-day ingestion + market-intelligence track.**
+Backend suite 24/24 PASS (was 14). UI ESM gate clean. Three copies in sync.
+
+The plugin now reads more than one report day and carries the competitor
+matrix as a first-class, separate track.
 
 ## What this is
 
-Functional demo of the ORIO Operations experience for Ajeez Sebastian's
-90-Day AI Operations Pilot (SAR 7,500 ex VAT, ORIO workflow, supervised
-approvals). Real data only: 292 Rig+Well blocks extracted from the supplied
-691-page Sep 19 Morning Report, 6 verified job cases, HP-707 history from
-17 daily reports, MDD PO 4508154877, 6-row competitor demo (out of scope).
-Nothing invented. No external actions exist anywhere in the code.
+ORIO Operations for Ajeez Sebastian's 90-Day AI Operations Pilot, now built as
+a **real product** rather than a demo. Ajeez is client #1, not the only client.
+Two tracks live side by side and never mix:
+
+1. **ORIO operations** — rig/well/job-cycle lifecycle, reconciliation, MDD.
+   Evidence states, approval gates, page lineage.
+2. **Market intelligence** — competitor tool-size x company rows mined from
+   morning reports. Market observations only, never operational claims.
+   End goal of the current workstream.
+
+Email, OneDrive and Telegram remain BLOCKED. They are architected to be
+switched on later without a rewrite (see Next plan).
+
+## Data now served
+
+| Source | Rows | Where |
+|---|---|---|
+| Sep 19 MR (691 p, legacy index) | 292 blocks | `data/mr_index.json` |
+| Oct 12 MR (649 p) | 280 blocks | `data/ingested/mr/LMR10122026.json` |
+| Sep 19 MR (re-ingested) | 292 blocks | `data/ingested/mr/Sep19.json` |
+| Tracker workbook (40 day-sheets) | 2,302 rows | `data/ingested/tracker/` |
+| June competitor matrix | 131 rows | `data/ingested/matrix/June2026.json` |
+| Jun–Aug + Sep MRs (not yet ingested) | 91 files | `03_Market-Intelligence/` |
+
+## Ingestion (new — runtime, not build-time)
+
+    data/ingest_mr.py       MR PDF  -> dated rig/well index records
+    data/ingest_tracker.py  XLSX    -> dated tracker rows (one sheet per day)
+    data/ingest_matrix.py   XLSX    -> competitor matrix rows
+    data/build_db.py        reads all of the above + legacy JSON -> SQLite
+
+Slow PDF work happens once in the ingest scripts; `build_db.py` only reads
+their JSON, so rebuilds stay fast.
+
+**Proven:** `ingest_mr.py` segments the Sep 19 sample to exactly 292 blocks
+with 0 first_page mismatches against the known-good index.
+
+## Schema changes (Phase 1)
+
+- `rig_blocks` + `jobs` gained `report_date` (multi-day was impossible before).
+- New `reports` table (one row per ingested day).
+- New `matrix_rows` table (market-intel track).
+- `tracker_rows` gained the real tracker columns + `report_date`.
+- `decisions` gained `actor` / `actor_role` (non-repudiable approvals).
+
+## API
+
+New: `/reports`, `/matrix`, `/matrix/export.csv`.
+Changed: `/rigs` and `/rigs/{rig}/{well}` take `report_date` (default latest);
+`/meta` returns `report_dates`. Hardcoded `2026-09-19` removed.
+
+## UI
+
+- Report-day selector in the top bar (drives Rigs & Wells).
+- New **Market Intel** view: month / size / company filters, size x company
+  bars, page-lineage column, CSV export.
+- Today and the curated cases remain dated to the Sep 19 baseline and say so
+  on screen.
+
+## Sync (one command)
+
+    bash tools/sync_ui.sh
+
+Copies repo -> `plugins/` -> `desktop-plugins/` mirror, runs the ESM gate on
+the mirror, byte-checks against the repo, and runs the backend suite.
+Then: Hermes Desktop -> Ctrl/Cmd+K -> Reload desktop plugins.
+
+## Process rules learned the hard way
+
+1. The app loads ONLY the `desktop-plugins/` mirror copy. Editing the repo
+   changes nothing the operator can see. Use `tools/sync_ui.sh`.
+2. The shell owns the mirror dir and can delete/stale it (marker
+   `.hermes-package.json`). If UI changes "don't appear", check the mirror.
+3. Gate every UI edit with `node --input-type=module --check`. Plain
+   `node --check` parses CommonJS and gives a FALSE CLEAN on this ESM file
+   (root-caused 2026-10-06: stray `]` threw on every load).
+4. Backend router mounts at dashboard-server start; `plugins.enabled` is read
+   via CLI only (`hermes config set`, never hand-edit).
+5. Never claim visual PASS without an operator screenshot. Byte checks are
+   not render checks.
+6. Compare copies with CRLF-normalized hashes (`tr -d '
+' | md5sum`), never
+   raw `diff` — the repo is LF and installed copies are CRLF, so raw diff
+   reports thousands of phantom differences.
+7. Install ONLY via `hermes plugins install <repo> + enable`. Manual copies
+   into `plugins/` are pruned by plugin sync.
+
+## Resume commands
+
+```bash
+cd "D:/12_projects/Innovex (ajeez)/orio-operations-plugin"
+git pull --rebase && git push
+# ingest a new report day
+python3 data/ingest_mr.py "D:/12_projects/Innovex (ajeez)/01_Morning-Reports/<file>.pdf" \
+        --json data/ingested/mr/<file>.json
+python3 data/build_db.py
+bash tools/sync_ui.sh
+```
+
+## Open items
+
+1. **June-131 acceptance test** — full month reproduction from the 80 June MRs,
+   with the 2 supervisor-flagged rows surfaced as corrections. Extraction run
+   in progress (`05_Architecture/june_matrix.py`).
+2. Ingest the remaining 80 Jun–Aug + 11 Sep MRs into the day index.
+3. Rows in `matrix_rows` carry `source_page` only when extracted from a report;
+   workbook-sourced rows show "workbook". The June extraction closes this.
+4. Operator render QA on the new Market Intel view.
+5. Phase 2 (channel seams), Phase 3 (hardening), Phase 4 (multi-client) — see
+   `06_Working-Notes/next-plan-of-action-2026-10-12.md`.
+
+## Do NOT
+
+- Record video, contact Ajeez's counterparties, or connect external systems
+  without explicit owner order.
+- Merge market-intel rows into ORIO lifecycle/reconciliation state.
+
 
 ## Paths
 
