@@ -31,8 +31,13 @@ def check(name, cond, extra=''):
 
 
 check('health', c.get(B + '/health').json()['ok'] is True)
-check('rigs=292', c.get(B + '/rigs?limit=1').json()['total'] == 292)
-wells = {x['well'] for x in c.get(B + '/rigs?q=HP-707').json()['rows']}
+check('rigs=292', c.get(B + '/rigs?limit=1&report_date=2026-09-19').json()['total'] == 292)
+check('rigs-oct12=280', c.get(B + '/rigs?limit=1&report_date=2026-10-12').json()['total'] == 280)
+reps = c.get(B + '/reports').json()['reports']
+check('two-report-days', len(reps) == 2, str([r['report_date'] for r in reps]))
+met = c.get(B + '/meta').json()
+check('meta-latest-day', met['demo_date'] == '2026-10-12' and len(met['report_dates']) == 2)
+wells = {x['well'] for x in c.get(B + '/rigs?q=HP-707&report_date=2026-09-19').json()['rows']}
 check('hp707-new-cycle', 'THRY-961602' in wells, str(sorted(wells)))
 hist = c.get(B + '/history').json()
 check('history-job', 'THRY-961612' in hist['job'] and len(hist['events']) == 12)
@@ -62,6 +67,26 @@ em = c.post(B + '/drafts/email', json={'job': 'hp701'}).json()
 check('email-never-sends', em['sent'] is False and 'MISSING' in em['body'])
 csv = c.get(B + '/export.csv')
 check('csv', csv.status_code == 200 and csv.text.count('\n') > 292)
+
+# ---- market intelligence track ----
+mx = c.get(B + '/matrix').json()
+check('matrix-131', mx['total'] == 131, 'total=%s' % mx['total'])
+check('matrix-sizes', {s['size']: s['n'] for s in mx['by_size']}
+      == {'9.625': 66, '13.375': 63, '18.625': 2},
+      str({s['size']: s['n'] for s in mx['by_size']}))
+check('matrix-companies', {s['company']: s['n'] for s in mx['by_company']}
+      == {'WFD': 48, 'HAL': 45, 'FET': 27, 'TAM': 11},
+      str({s['company']: s['n'] for s in mx['by_company']}))
+check('matrix-month-june', [m['month'] for m in mx['by_month']] == ['2026-06'])
+mxf = c.get(B + '/matrix?size=13.375&company=HAL').json()
+check('matrix-filter', mxf['total'] > 0 and all(
+    r['size'] == '13.375' and r['company'] == 'HAL' for r in mxf['rows']))
+mxj = c.get(B + '/matrix?month=2026-06').json()
+check('matrix-june-june1', sum(1 for r in mxj['rows'] if r['date'] == '2026-06-01') == 6)
+mxc = c.get(B + '/matrix/export.csv')
+check('matrix-csv', mxc.status_code == 200 and mxc.text.count('\n') == 132,
+      'lines=%d' % mxc.text.count('\n'))
+
 src = (PKG / 'dashboard' / 'plugin_api.py').read_text()
 check('no-net', all(('import ' + m) not in src and ('from ' + m) not in src
                     for m in ['socket', 'urllib', 'httpx', 'requests', 'smtplib', 'email.mime']))

@@ -71,8 +71,30 @@ def health() -> dict[str, Any]:
 def meta() -> dict[str, Any]:
     with _db() as con:
         m = {r['key']: r['value'] for r in con.execute('SELECT * FROM meta')}
-    return {'demo_date': '2026-09-19', 'built_from': m.get('built_from', '?'),
+        days = [r['report_date'] for r in con.execute(
+            'SELECT report_date FROM reports ORDER BY report_date DESC')]
+    return {'demo_date': days[0] if days else m.get('seed_date', '?'),
+            'report_dates': days,
+            'built_from': m.get('built_from', '?'),
             'banner': 'DEMO - LOCAL DATA ONLY. NO EXTERNAL ACTIONS ENABLED.'}
+
+
+def _latest_date(con: sqlite3.Connection) -> str | None:
+    r = con.execute('SELECT report_date FROM reports'
+                    ' ORDER BY report_date DESC LIMIT 1').fetchone()
+    return r['report_date'] if r else None
+
+
+@router.get('/reports')
+def reports() -> dict[str, Any]:
+    with _db() as con:
+        rows = [_row(r) for r in con.execute(
+            'SELECT * FROM reports ORDER BY report_date DESC')]
+        for r in rows:
+            r['block_count_actual'] = con.execute(
+                'SELECT COUNT(*) c FROM rig_blocks WHERE report_date=?',
+                (r['report_date'],)).fetchone()['c']
+    return {'reports': rows}
 
 
 PRIORITY_RANK = {'critical': 0, 'high': 1, 'medium': 2, 'info': 3}
@@ -143,8 +165,8 @@ def action_list() -> dict[str, Any]:
         actions = [_row(r) for r in con.execute('SELECT * FROM actions')]
         for a in actions:
             dec = con.execute(
-                'SELECT decision, note, at FROM decisions WHERE action_id=?'
-                ' ORDER BY id DESC LIMIT 1', (a['id'],)).fetchone()
+                'SELECT decision, note, actor, actor_role, at FROM decisions'
+                ' WHERE action_id=? ORDER BY id DESC LIMIT 1', (a['id'],)).fetchone()
             a['last_decision'] = dict(dec) if dec else None
             if a['job_id']:
                 j = con.execute('SELECT rig, well FROM jobs WHERE id=?',
@@ -171,8 +193,10 @@ def decide(action_id: str, body: dict[str, Any]) -> dict[str, Any]:
         new_state = {'approve': 'approved', 'reject': 'rejected',
                      'incorrect': 'incorrect'}[decision]
         con.execute('UPDATE actions SET state=? WHERE id=?', (new_state, action_id))
-        con.execute('INSERT INTO decisions(action_id,decision,note) VALUES (?,?,?)',
-                    (action_id, decision, note or None))
+        con.execute('INSERT INTO decisions(action_id,decision,note,actor,actor_role)'
+                    ' VALUES (?,?,?,?,?)',
+                    (action_id, decision, note or None,
+                     body.get('actor') or 'Ajeez', body.get('actor_role') or 'operator'))
         applied = None
         if decision == 'approve' and action_id == 'a-hp701-db':
             con.execute("UPDATE jobs SET lifecycle='RIH CONFIRMED' WHERE id='hp701'")
@@ -186,37 +210,47 @@ def decide(action_id: str, body: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.get('/rigs')
-def rigs(q: str = Query(''), limit: int = Query(60, le=292),
-         offset: int = Query(0, ge=0)) -> dict[str, Any]:
+def rigs(q: str = Query(''), limit: int = Query(60, le=2000),
+         offset: int = Query(0, ge=0),
+         report_date: str = Query('')) -> dict[str, Any]:
     with _db() as con:
+        day = report_date or _latest_date(con)
+        where, args = ' WHERE report_date=?', [day]
         if q:
             like = '%' + q.upper() + '%'
-            total = con.execute(
-                'SELECT COUNT(*) c FROM rig_blocks WHERE UPPER(rig) LIKE ?'
-                ' OR UPPER(well) LIKE ?', (like, like)).fetchone()['c']
-            rows = [_row(r) for r in con.execute(
-                'SELECT rig, well, first_page, pages, stage, orio_relevance FROM rig_blocks'
-                ' WHERE UPPER(rig) LIKE ? OR UPPER(well) LIKE ?'
-                ' ORDER BY rig, well LIMIT ? OFFSET ?', (like, like, limit, offset))]
-        else:
-            total = con.execute('SELECT COUNT(*) c FROM rig_blocks').fetchone()['c']
-            rows = [_row(r) for r in con.execute(
-                'SELECT rig, well, first_page, pages, stage, orio_relevance FROM rig_blocks'
-                ' ORDER BY rig, well LIMIT ? OFFSET ?', (limit, offset))]
-    return {'total': total, 'rows': rows}
+            where += ' AND (UPPER(rig) LIKE ? OR UPPER(well) LIKE ?)'
+            args += [like, like]
+        total = con.execute('SELECT COUNT(*) c FROM rig_blocks' + where,
+                            args).fetchone()['c']
+        rows = [_row(r) for r in con.execute(
+            'SELECT report_date, rig, well, first_page, pages, stage,'
+            ' orio_relevance, source_file FROM rig_blocks' + where +
+            ' ORDER BY rig, well LIMIT ? OFFSET ?', args + [limit, offset])]
+    return {'total': total, 'rows': rows, 'report_date': day}
 
 
 @router.get('/rigs/{rig}/{well}')
-def rig_detail(rig: str, well: str) -> dict[str, Any]:
+def rig_detail(rig: str, well: str, report_date: str = Query('')) -> dict[str, Any]:
     with _db() as con:
-        b = con.execute('SELECT * FROM rig_blocks WHERE rig=? AND well=?',
-                        (rig.upper(), well.upper())).fetchone()
+        day = report_date or _latest_date(con)
+        b = con.execute('SELECT * FROM rig_blocks WHERE rig=? AND well=?'
+                        ' AND report_date=?',
+                        (rig.upper(), well.upper(), day)).fetchone()
         if not b:
-            raise HTTPException(404, 'Rig+Well not in Sep 19 index')
+            # fall back to any day so an older block is still reachable
+            b = con.execute('SELECT * FROM rig_blocks WHERE rig=? AND well=?'
+                            ' ORDER BY report_date DESC LIMIT 1',
+                            (rig.upper(), well.upper())).fetchone()
+        if not b:
+            raise HTTPException(404, 'Rig+Well not in the index for this report')
         b = _row(b)
         job = con.execute('SELECT * FROM jobs WHERE rig=? AND well=?',
                           (rig.upper(), well.upper())).fetchone()
         out = dict(b)
+        out['tracker'] = [_row(r) for r in con.execute(
+            'SELECT * FROM tracker_rows WHERE rig=? AND well=?'
+            ' ORDER BY report_date DESC LIMIT 30',
+            (rig.upper(), well.upper()))]
         if job:
             job = _row(job)
             job['evidence'] = [_row(r) for r in con.execute(
@@ -302,6 +336,86 @@ def expansion() -> dict[str, Any]:
                           'automation requires separate scope approval.'),
             'fields': ['Date RIH', 'Rig', 'Well', 'Size', 'Company', 'Special Remarks'],
             'rows': rows}
+
+
+# ---------------------------------------------------------------- market intel
+# The market-intelligence track: competitor tool-size x company rows mined from
+# morning reports. Kept strictly separate from ORIO lifecycle/reconciliation
+# state — different evidence, different audience (supervisor -> engineering
+# manager). Rows carry page lineage so every value is traceable to a report page.
+
+@router.get('/matrix')
+def matrix(month: str = Query(''), size: str = Query(''),
+           company: str = Query(''), limit: int = Query(500, le=5000),
+           offset: int = Query(0, ge=0)) -> dict[str, Any]:
+    with _db() as con:
+        where, args = ' WHERE 1=1', []
+        if month:
+            where += " AND substr(date,1,7)=?"
+            args.append(month)
+        if size:
+            where += ' AND size=?'
+            args.append(size)
+        if company:
+            where += ' AND UPPER(company)=?'
+            args.append(company.upper())
+        total = con.execute('SELECT COUNT(*) c FROM matrix_rows' + where,
+                            args).fetchone()['c']
+        rows = [_row(r) for r in con.execute(
+            'SELECT * FROM matrix_rows' + where +
+            ' ORDER BY date, rig, well LIMIT ? OFFSET ?', args + [limit, offset])]
+        sizes = [_row(r) for r in con.execute(
+            'SELECT size, COUNT(*) n FROM matrix_rows' + where +
+            ' GROUP BY size ORDER BY n DESC', args)]
+        comps = [_row(r) for r in con.execute(
+            'SELECT company, COUNT(*) n FROM matrix_rows' + where +
+            ' GROUP BY company ORDER BY n DESC', args)]
+        months = [_row(r) for r in con.execute(
+            'SELECT substr(date,1,7) month, COUNT(*) n FROM matrix_rows'
+            ' GROUP BY month ORDER BY month')]
+        by_size_company = [_row(r) for r in con.execute(
+            'SELECT size, company, COUNT(*) n FROM matrix_rows' + where +
+            ' GROUP BY size, company ORDER BY size, n DESC', args)]
+        with_page = con.execute(
+            'SELECT COUNT(*) c FROM matrix_rows' + where +
+            ' AND source_page IS NOT NULL', args).fetchone()['c']
+    return {'rows': rows, 'total': total,
+            'by_size': sizes, 'by_company': comps, 'by_month': months,
+            'by_size_company': by_size_company,
+            'lineage': {'with_source_page': with_page, 'total': total},
+            'track': 'market intelligence (separate from ORIO lifecycle)'}
+
+
+@router.get('/matrix/export.csv')
+def matrix_csv(month: str = Query(''), size: str = Query(''),
+               company: str = Query('')) -> Response:
+    with _db() as con:
+        where, args = ' WHERE 1=1', []
+        if month:
+            where += " AND substr(date,1,7)=?"
+            args.append(month)
+        if size:
+            where += ' AND size=?'
+            args.append(size)
+        if company:
+            where += ' AND UPPER(company)=?'
+            args.append(company.upper())
+        rows = con.execute(
+            'SELECT date, rig, well, size, company, remarks, source_file,'
+            ' source_page FROM matrix_rows' + where +
+            ' ORDER BY date, rig, well', args)
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(['Date RIH', 'Rig', 'Well', 'Size', 'Company',
+                    'Special Remarks', 'Source File', 'Source Page'])
+        for r in rows:
+            w.writerow([r['date'], r['rig'], r['well'], r['size'],
+                        r['company'], r['remarks'], r['source_file'],
+                        r['source_page']])
+    name = 'orio_market_intel%s.csv' % (('_' + month) if month else '')
+    return Response(content=buf.getvalue(), media_type='text/csv',
+                    headers={'Content-Disposition':
+                             'attachment; filename="%s"' % name})
 
 
 @router.get('/export.csv')

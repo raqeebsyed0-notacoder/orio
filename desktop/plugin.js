@@ -92,6 +92,9 @@ function ensureStyles() {
   .${ID}-num { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
   .${ID}-lbl { font-size:11px; color:var(--ui-text-tertiary); }
   .${ID}-toolbar { display:flex; gap:.5rem; margin-bottom:.6rem; align-items:center; flex-wrap:wrap; }
+  .${ID}-daypick { display:inline-flex; align-items:center; }
+  .${ID}-dim { opacity:.55; font-size:.78rem; }
+  .${ID}-raildesc { font-size:.78rem; line-height:1.45; opacity:.75; }
   .${ID}-resultcount { font-size:12px; color:var(--ui-text-tertiary); margin-left:auto; white-space:nowrap; }
   .${ID}-tablewrap { border:1px solid var(--ui-stroke-secondary); border-radius:8px; overflow:auto; background:var(--ui-bg-card); }
   .${ID}-table { width:100%; min-width:880px; border-collapse:separate; border-spacing:0; font-size:12.5px; }
@@ -180,10 +183,13 @@ const VIEWS = [
   { id: 'exceptions', label: 'Exceptions' },
   { id: 'evidence', label: 'Evidence' },
   { id: 'history', label: 'History' },
+  { id: 'market', label: 'Market Intel' },
   { id: 'expansion', label: 'Expansion' }
 ]
 
 const $view = atom(storageGet('view', 'today'))
+// Selected report day. Empty string = latest available day (server default).
+const $day = atom(storageGet('day', ''))
 const hotState = raw => {
   const s = String(raw).toUpperCase()
   return (s === 'CONFLICT' || s === 'BLOCKED' || s === 'INCORRECT' ||
@@ -424,7 +430,7 @@ function TodayView({ openJob }) {
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Today, 19 September 2026' }),
-        jsx('div', { className: `${ID}-sub`, children: 'Only what requires attention. ' + q.data.date_rule }),
+        jsx('div', { className: `${ID}-sub`, children: 'Only what requires attention. Curated cases are dated to the Sep 19 baseline report; the report-day selector above drives the Rigs & Wells index. ' + q.data.date_rule }),
         jsx('div', {
           className: `${ID}-tiles`,
           children: q.data.cards.map(c => jsx('div', {
@@ -613,10 +619,11 @@ function RigsView({ openRig }) {
   const [qry, setQry] = useState(storageGet('rigq', ''))
   const [fStage, setFStage] = useState('all')
   const [page, setPage] = useState(0)
+  const day = useValue($day)
   const per = 60
-  // Full index in one cached read (292 rows max): stage bars and search
-  // both run client-side, so every bar tap filters instantly.
-  const q = useApi('/rigs?limit=292&offset=0')
+  // Full index in one cached read: stage bars and search both run
+  // client-side, so every bar tap filters instantly.
+  const q = useApi('/rigs?limit=2000&offset=0' + (day ? '&report_date=' + encodeURIComponent(day) : ''))
   useEffect(() => { storageSet('rigq', qry); setPage(0) }, [qry, fStage])
   const allRows = (q.data && q.data.rows) || []
   const indexTotal = (q.data && q.data.total) || 0
@@ -1163,6 +1170,194 @@ function HistoryView() {
 }
 
 /* ------------------------------- Expansion ------------------------------- */
+function MarketIntelView() {
+  const [month, setMonth] = useState('')
+  const [fSize, setFSize] = useState('')
+  const [fCo, setFCo] = useState('')
+  const [fText, setFText] = useState('')
+  const [page, setPage] = useState(0)
+  const per = 50
+  const qs = []
+  if (month) qs.push('month=' + encodeURIComponent(month))
+  if (fSize) qs.push('size=' + encodeURIComponent(fSize))
+  if (fCo) qs.push('company=' + encodeURIComponent(fCo))
+  const q = useApi('/matrix' + (qs.length ? '?' + qs.join('&') : ''))
+  useEffect(() => { setPage(0) }, [month, fSize, fCo, fText])
+  const allRows = (q.data && q.data.rows) || []
+  const bySize = (q.data && q.data.by_size) || []
+  const byCo = (q.data && q.data.by_company) || []
+  const byMonth = (q.data && q.data.by_month) || []
+  const bySC = (q.data && q.data.by_size_company) || []
+  const lineage = (q.data && q.data.lineage) || { with_source_page: 0, total: 0 }
+  const needle = fText.toUpperCase()
+  const rows = useMemo(() => allRows.filter(r =>
+    !needle || (textOf(r.date) + ' ' + textOf(r.rig) + ' ' + textOf(r.well) + ' ' +
+      textOf(r.size) + ' ' + textOf(r.company) + ' ' + textOf(r.remarks)).toUpperCase().includes(needle)
+  ), [allRows, needle])
+  const total = (q.data && q.data.total) || 0
+  const pages = Math.max(1, Math.ceil(rows.length / per))
+  const safePage = Math.min(page, pages - 1)
+  const pageRows = rows.slice(safePage * per, safePage * per + per)
+  const maxSC = Math.max(1, ...bySC.map(x => x.n))
+  const SIZE_LBL = { '9.625': '9-5/8"', '13.375': '13-3/8"', '18.625': '18-5/8"' }
+  const sizeLbl = s => SIZE_LBL[s] || s
+  return jsx(LoadGate, {
+    q, empty: q.data && rows.length === 0 ? { title: 'No matrix rows', desc: 'Clear the filters to see all rows.' } : null,
+    children: q.data ? jsxs('div', {
+      children: [
+        jsx('h2', { className: `${ID}-h`, children: 'Market Intelligence' }),
+        jsx('div', { className: `${ID}-sub`, children: 'Competitor tool size x company, mined from morning reports. Separate track from ORIO lifecycle: market observations, never operational claims. ' + lineage.with_source_page + ' of ' + lineage.total + ' rows carry a source page.' }),
+        jsx('div', {
+          className: `${ID}-tiles`,
+          children: [
+            { key: 'rows', label: 'Matrix Rows', value: total },
+            { key: 'months', label: 'Months', value: byMonth.length },
+            { key: 'sizes', label: 'Tool Sizes', value: bySize.length },
+            { key: 'cos', label: 'Companies', value: byCo.length },
+            { key: 'page', label: 'Page-Linked', value: lineage.with_source_page }
+          ].map(c => jsx('div', {
+            className: `${ID}-tile`, key: c.key,
+            'data-hot': c.key === 'page' && c.value === 0 ? '1' : '0',
+            children: jsxs('div', {
+              children: [
+                jsx('div', { className: `${ID}-num`, children: String(c.value) }),
+                jsx('div', { className: `${ID}-lbl`, children: c.label })
+              ]
+            })
+          }))
+        }),
+        jsxs('div', {
+          className: `${ID}-toolbar`,
+          children: [
+            byMonth.length > 1 ? jsx(SegmentedControl, {
+              value: month || 'all',
+              onChange: v => setMonth(v === 'all' ? '' : v),
+              options: [{ id: 'all', label: 'All' }].concat(
+                byMonth.map(m => ({ id: m.month, label: m.month })))
+            }) : null,
+            jsx(SegmentedControl, {
+              value: fSize || 'all',
+              onChange: v => setFSize(v === 'all' ? '' : v),
+              options: [{ id: 'all', label: 'All sizes' }].concat(
+                bySize.map(s => ({ id: s.size, label: sizeLbl(s.size) })))
+            }),
+            jsx(SegmentedControl, {
+              value: fCo || 'all',
+              onChange: v => setFCo(v === 'all' ? '' : v),
+              options: [{ id: 'all', label: 'All' }].concat(
+                byCo.map(c => ({ id: c.company, label: c.company })))
+            }),
+            jsx(SearchField, {
+              value: fText,
+              onChange: v => setFText(searchVal(v)),
+              placeholder: 'Filter rig, well, company...'
+            }),
+            jsx('span', { className: `${ID}-resultcount`, children: 'Showing ' + pageRows.length + ' of ' + rows.length })
+          ]
+        }),
+        jsx('div', {
+          className: `${ID}-todaygrid`,
+          children: [
+            jsx('div', {
+              className: `${ID}-todaymain`,
+              children: jsxs('div', {
+                children: [
+                  jsx('div', {
+                    className: `${ID}-tablewrap`,
+                    children: jsx('table', {
+                      className: `${ID}-table`,
+                      'aria-label': 'Competitor matrix rows',
+                      children: [
+                        jsx(THead, { cols: ['Date RIH', 'Rig', 'Well', 'Size', 'Company', 'Remarks', 'Source'] }),
+                        jsx('tbody', {
+                          children: pageRows.map((r, i) => jsx('tr', {
+                            key: r.id || (r.date + r.rig + r.well + i),
+                            children: [
+                              jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: textOf(r.date) }) }),
+                              jsx('td', { children: jsx('strong', { children: r.rig }) }),
+                              jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
+                              jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: sizeLbl(r.size) }) }),
+                              jsx('td', { children: jsx(Pill, { status: r.company }) }),
+                              jsx('td', { children: textOf(r.remarks) || jsx('span', { className: `${ID}-dim`, children: 'None' }) }),
+                              jsx('td', {
+                                children: r.source_page
+                                  ? jsx('span', { className: `${ID}-mono`, children: 'p' + r.source_page })
+                                  : jsx('span', { className: `${ID}-dim`, children: 'workbook' })
+                              })
+                            ]
+                          }))
+                        })
+                      ]
+                    })
+                  }),
+                  pages > 1 ? jsxs('div', {
+                    className: `${ID}-toolbar`,
+                    style: { marginTop: '.6rem' },
+                    children: [
+                      jsx(Button, { size: 'xs', variant: 'ghost', disabled: safePage === 0, onClick: () => setPage(safePage - 1), children: 'Previous' }),
+                      jsx('span', { className: `${ID}-resultcount`, children: 'Page ' + (safePage + 1) + ' of ' + pages }),
+                      jsx(Button, { size: 'xs', variant: 'ghost', disabled: safePage >= pages - 1, onClick: () => setPage(safePage + 1), children: 'Next' })
+                    ]
+                  }) : null
+                ]
+              })
+            }),
+            jsx('div', {
+              className: `${ID}-rail`,
+              children: jsxs('div', {
+                children: [
+                  jsx('div', { className: `${ID}-railcard`, children: jsxs('div', {
+                    children: [
+                      jsx('div', { className: `${ID}-railtitle`, children: 'Size x Company' }),
+                      jsx('div', {
+                        className: `${ID}-bars`,
+                        children: bySC.map(x => jsxs('div', {
+                          className: `${ID}-barrow`, key: x.size + x.company,
+                          onClick: () => { setFSize(x.size); setFCo(x.company) },
+                          children: [
+                            jsx('span', { className: `${ID}-barname`, children: sizeLbl(x.size) + ' ' + x.company }),
+                            jsx('span', {
+                              className: `${ID}-bar`, style: { width: (x.n / maxSC * 100) + '%' }
+                            }),
+                            jsx('span', { className: `${ID}-barnum`, children: String(x.n) })
+                          ]
+                        }))
+                      })
+                    ]
+                  }) }),
+                  jsx('div', { className: `${ID}-railcard`, children: jsxs('div', {
+                    children: [
+                      jsx('div', { className: `${ID}-railtitle`, children: 'Companies' }),
+                      jsx('div', {
+                        className: `${ID}-bars`,
+                        children: byCo.map(c => jsxs('div', {
+                          className: `${ID}-barrow`, key: c.company,
+                          onClick: () => setFCo(c.company),
+                          children: [
+                            jsx('span', { className: `${ID}-barname`, children: c.company }),
+                            jsx('span', { className: `${ID}-bar`, style: { width: (c.n / Math.max(1, ...byCo.map(y => y.n)) * 100) + '%' } }),
+                            jsx('span', { className: `${ID}-barnum`, children: String(c.n) })
+                          ]
+                        }))
+                      })
+                    ]
+                  }) }),
+                  jsx('div', { className: `${ID}-railcard`, children: jsxs('div', {
+                    children: [
+                      jsx('div', { className: `${ID}-railtitle`, children: 'Evidence Rule' }),
+                      jsx('div', { className: `${ID}-raildesc`, children: 'Every row is traceable to the report it came from. Rows from Ajeez\u2019s own workbook show no page; extracted rows carry one.' })
+                    ]
+                  }) })
+                ]
+              })
+            })
+          ]
+        })
+      ]
+    }) : null
+  })
+}
+
 function ExpansionView() {
   const q = useApi('/expansion')
   const [fText, setFText] = useState('')
@@ -1404,7 +1599,12 @@ function OrioPage() {
   const todayQ = useApi('/today')
   const actsQ = useApi('/actions')
   const excQ = useApi('/exceptions')
-  const rigsQ = useApi('/rigs?limit=1&offset=0')
+  const metaQ = useApi('/meta')
+  const day = useValue($day)
+  const rigsQ = useApi('/rigs?limit=1&offset=0' + (day ? '&report_date=' + encodeURIComponent(day) : ''))
+  const days = (metaQ.data && metaQ.data.report_dates) || []
+  const latest = days.length ? days[0] : ''
+  const dayLabel = day || latest || '?'
   const attn = todayQ.data ? todayQ.data.items.filter(i => i.priority === 'critical' || i.priority === 'high').length : 0
   const awaiting = actsQ.data ? actsQ.data.actions.filter(a => a.state === 'awaiting' || a.state === 'blocked').length : 0
   const openExc = excQ.data ? excQ.data.exceptions.filter(x => x.state === 'open').length : 0
@@ -1417,6 +1617,7 @@ function OrioPage() {
     : view === 'exceptions' ? jsx(ExceptionsView, { openJob })
     : view === 'evidence' ? jsx(EvidenceView, {})
     : view === 'history' ? jsx(HistoryView, {})
+    : view === 'market' ? jsx(MarketIntelView, {})
     : jsx(ExpansionView, {})
   const howItWorks = async () => {
     const ok = await revealPath(ARCH_HTML).catch(() => false)
@@ -1432,6 +1633,11 @@ function OrioPage() {
         children: [
           jsx('span', { className: `${ID}-title`, children: 'ORIO Operations' }),
           jsx('span', { className: `${ID}-demobadge`, children: 'DEMO, LOCAL DATA ONLY' }),
+          days.length ? jsx('span', { className: `${ID}-daypick`, children: jsx(SegmentedControl, {
+            value: dayLabel,
+            onChange: v => { $day.set(v); storageSet('day', v) },
+            options: days.map(d => ({ id: d, label: d }))
+          }) }) : null,
           jsx('span', { className: `${ID}-sub`, style: { margin: 0 }, children: 'No external actions enabled.' }),
           jsx('span', { style: { flex: 1 } }),
           jsx(Button, { size: 'xs', variant: 'ghost', onClick: howItWorks, children: 'How this works' }),
@@ -1486,6 +1692,8 @@ export default {
     try {
       const v = ctx.storage.get('view', 'today')
       if (VIEWS.some(x => x.id === v)) $view.set(v)
+      const d = ctx.storage.get('day', '')
+      if (d) $day.set(d)
     } catch (e) { /* session-only */ }
     storageGet = (key, fallback) => {
       try { return ctx.storage.get(key, fallback) } catch (e) { return fallback }
