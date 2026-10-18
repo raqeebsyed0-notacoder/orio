@@ -37,15 +37,20 @@ from typing import Any, Iterator
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response
 
-try:  # tests put dashboard/ on sys.path; gateway loads it as a package
+try:  # tests put dashboard/ on sys.path; the gateway does neither
     from channels import all_statuses, build_email_payload, get_channel
     from clients import (DEFAULT_CLIENT, UnknownClient,
                          db_path as _client_db_path, list_clients,
                          load_config, resolve_client)
-except Exception:  # pragma: no cover - installed layout fallback
-    from dashboard.channels import (  # type: ignore[no-redef]
+except Exception:  # pragma: no cover - gateway loads this file standalone
+    import sys as _sys
+
+    _here = str(Path(__file__).resolve().parent)
+    if _here not in _sys.path:
+        _sys.path.insert(0, _here)
+    from channels import (  # type: ignore[no-redef]
         all_statuses, build_email_payload, get_channel)
-    from dashboard.clients import (  # type: ignore[no-redef]
+    from clients import (  # type: ignore[no-redef]
         DEFAULT_CLIENT, UnknownClient,
         db_path as _client_db_path, list_clients,
         load_config, resolve_client)
