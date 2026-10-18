@@ -17,11 +17,19 @@ echo "== syncing repo -> plugins/ =="
 mkdir -p "$PLUGINS/desktop" "$PLUGINS/dashboard" "$PLUGINS/data"
 cp "$REPO/desktop/plugin.js"          "$PLUGINS/desktop/plugin.js"
 cp "$REPO/dashboard/plugin_api.py"    "$PLUGINS/dashboard/plugin_api.py"
+cp "$REPO/dashboard/channels.py"      "$PLUGINS/dashboard/channels.py"
+cp "$REPO/dashboard/clients.py"       "$PLUGINS/dashboard/clients.py"
 cp "$REPO/dashboard/manifest.json"    "$PLUGINS/dashboard/manifest.json"
 cp "$REPO/plugin.yaml"                "$PLUGINS/plugin.yaml"
-for f in build_db.py ingest_mr.py ingest_tracker.py ingest_matrix.py \
-         mr_index.json seed_cases.json; do
+for f in build_db.py ingest_mr.py ingest_tracker.py ingest_matrix.py jev_consume.py \
+         mr_index.json seed_cases.json company_aliases.json; do
   [ -f "$REPO/data/$f" ] && cp "$REPO/data/$f" "$PLUGINS/data/$f"
+done
+
+echo "== syncing repo tests -> plugins/tests =="
+mkdir -p "$PLUGINS/tests"
+for f in lane_c_check.py run_api.py test_api.py test_jev_repair.py; do
+  [ -f "$REPO/tests/$f" ] && cp "$REPO/tests/$f" "$PLUGINS/tests/$f"
 done
 
 echo "== syncing repo -> desktop-plugins mirror =="

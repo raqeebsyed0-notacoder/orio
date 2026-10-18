@@ -1,0 +1,7 @@
+{
+  "recipient": "test-chat-ref",
+  "subject": "",
+  "body": "ORIO offline fixture: harmless test message (never posted).",
+  "attachments": [],
+  "ref": "telegram:fixture-001"
+}

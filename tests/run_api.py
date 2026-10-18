@@ -9,14 +9,18 @@ HERE = Path(__file__).resolve().parent
 PKG = HERE.parent
 sys.path.insert(0, str(PKG / 'dashboard'))
 sys.path.insert(0, str(PKG / 'data'))
-os.environ['HERMES_HOME'] = tempfile.mkdtemp(prefix='orio-test-home-')
+SCRATCH = Path(os.environ.get('ORIO_REPAIR_OUT') or os.environ['TMPDIR']).resolve()
+SCRATCH.mkdir(parents=True, exist_ok=True)
+os.environ['HERMES_HOME'] = tempfile.mkdtemp(prefix='orio-test-home-', dir=SCRATCH)
+MATRIX_DIR = os.environ.get('ORIO_TEST_MATRIX_DIR')
+BUILD_ARGS = ['--home', os.environ['HERMES_HOME']] + (['--matrix-dir', MATRIX_DIR] if MATRIX_DIR else [])
 
 import build_db
 import plugin_api
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-build_db.main()
+build_db.main(BUILD_ARGS)
 app = FastAPI()
 app.include_router(plugin_api.router, prefix='/api/plugins/euphoria-orio-operations')
 c = TestClient(app)
@@ -34,9 +38,16 @@ check('health', c.get(B + '/health').json()['ok'] is True)
 check('rigs=292', c.get(B + '/rigs?limit=1&report_date=2026-09-19').json()['total'] == 292)
 check('rigs-oct12=280', c.get(B + '/rigs?limit=1&report_date=2026-10-12').json()['total'] == 280)
 reps = c.get(B + '/reports').json()['reports']
-check('two-report-days', len(reps) == 2, str([r['report_date'] for r in reps]))
+rep_dates = [r['report_date'] for r in reps]
+check('all-report-days', len(reps) == 92 and '2026-06-01' in rep_dates
+      and '2026-09-01' in rep_dates and '2026-10-12' in rep_dates
+      and all(r['block_count_actual'] == r['block_count'] for r in reps),
+      'n=%d' % len(reps))
+new_day = c.get(B + '/rigs?limit=1&report_date=2026-06-01').json()
+check('rigs-new-day', new_day['total'] == 287, str(new_day['total']))
 met = c.get(B + '/meta').json()
-check('meta-latest-day', met['demo_date'] == '2026-10-12' and len(met['report_dates']) == 2)
+check('meta-latest-day', met['demo_date'] == '2026-10-12'
+      and len(met['report_dates']) == 92 and met['report_dates'][0] == '2026-10-12')
 wells = {x['well'] for x in c.get(B + '/rigs?q=HP-707&report_date=2026-09-19').json()['rows']}
 check('hp707-new-cycle', 'THRY-961602' in wells, str(sorted(wells)))
 hist = c.get(B + '/history').json()
@@ -65,30 +76,273 @@ check('mdd-missing', 'MISSING - REQUIRES AJEEZ / SOURCE DATA' in ' '.join(v for 
       and mdd['send_enabled'] is False)
 em = c.post(B + '/drafts/email', json={'job': 'hp701'}).json()
 check('email-never-sends', em['sent'] is False and 'MISSING' in em['body'])
+
+# ---- Phase 2 channel seams (blocked-channel discipline) ----
+ch = c.get(B + '/channels/status').json()
+check('channels-all-blocked',
+      len(ch['channels']) == 3
+      and all(x['state'] == 'blocked' and x['reason'] for x in ch['channels']),
+      str([(x['channel'], x['state']) for x in ch['channels']]))
+check('channels-config',
+      sorted(x['channel'] for x in ch['channels'])
+      == ['email', 'onedrive', 'telegram'])
+check('email-payload-stored',
+      em['outbox_state'] == 'blocked'
+      and em['channel']['state'] == 'blocked'
+      and set(em['delivery_payload']) >= {'recipient', 'subject', 'body',
+                                          'attachments'},
+      str(sorted(em.get('delivery_payload', {}))))
+ob = c.get(B + '/delivery/outbox').json()
+check('outbox-stored-locally',
+      ob['send_enabled'] is False and len(ob['outbox']) == 1
+      and ob['outbox'][0]['state'] == 'blocked'
+      and ob['outbox'][0]['channel'] == 'email'
+      and ob['outbox'][0]['payload']['ref'] == 'draft:%d' % em['draft_id'],
+      str(ob['outbox'])[:200])
+mdd2 = c.get(B + '/mdd/preview?job=hp701').json()
+check('mdd-delivery-payload',
+      mdd2['send_enabled'] is False
+      and mdd2['channel']['state'] == 'blocked'
+      and set(mdd2['delivery_payload']) >= {'recipient', 'subject', 'body',
+                                            'attachments'})
+import channels as chmod
+art = chmod.get_channel('email').prepare(
+    {'recipient': 'r', 'subject': 's', 'body': 'b', 'attachments': [],
+     'ref': 't'})
+rcpt = chmod.get_channel('email').deliver(art)
+check('blocked-deliver-refuses',
+      rcpt['delivered'] is False and rcpt['state'] == 'blocked'
+      and bool(rcpt['reason']), str(rcpt))
+
+# ---- Phase 3 hardening: attributed approvals + gateway bind + ops log ----
+ap = c.post(B + '/actions/a-sp93-dispatch/decision',
+            json={'decision': 'approve', 'actor': 'Probe', 'actor_role': 'supervisor'}).json()
+check('approve-writes-actor',
+      ap['actor'] == 'Probe' and ap['actor_role'] == 'supervisor'
+      and ap['actor_source'] == 'client', str(ap))
+acts = c.get(B + '/actions').json()['actions']
+last = next(a['last_decision'] for a in acts if a['id'] == 'a-sp93-dispatch')
+check('actor-persisted',
+      last['actor'] == 'Probe' and last['actor_role'] == 'supervisor'
+      and last['actor_source'] == 'client', str(last))
+gw = c.post(B + '/actions/a-ad74-dispatch/decision',
+            json={'decision': 'reject'},
+            headers={'x-hermes-user': 'Ajeez',
+                     'x-hermes-user-role': 'supervisor'}).json()
+check('gateway-bind-wins',
+      gw['actor'] == 'Ajeez' and gw['actor_role'] == 'supervisor'
+      and gw['actor_source'] == 'gateway', str(gw))
+forge = c.post(B + '/actions/a-ad74-dispatch/decision',
+               json={'decision': 'reject', 'actor': 'SomeoneElse'},
+               headers={'x-hermes-user': 'Ajeez'})
+check('forgery-rejected', forge.status_code == 400, str(forge.status_code))
+dflt = c.post(B + '/actions/a-ad74-dispatch/decision',
+              json={'decision': 'incorrect'}).json()
+check('default-actor',
+      dflt['actor'] == 'Ajeez' and dflt['actor_role'] == 'operator'
+      and dflt['actor_source'] == 'default', str(dflt))
+rs = c.post(B + '/exceptions/1/resolve',
+            json={'note': 'phase3 probe', 'actor': 'Probe'}).json()
+check('resolve-writes-actor',
+      rs['actor'] == 'Probe' and rs['actor_source'] == 'client', str(rs))
+db3 = sqlite3.connect(str(db))
+db3.row_factory = sqlite3.Row
+res = db3.execute(
+    'SELECT actor, actor_role, actor_source FROM decisions'
+    " WHERE action_id='exception:1' ORDER BY id DESC LIMIT 1").fetchone()
+check('resolve-actor-persisted',
+      res['actor'] == 'Probe' and res['actor_source'] == 'client', str(dict(res)))
+db3.close()
+log = c.get(B + '/ops/log').json()
+ops = {(e['op'], e['status']) for e in log['entries']}
+check('ops-log-visible',
+      ('decision', 'approved') in ops
+      and ('decision', 'rejected-forgery') in ops
+      and ('exception-resolve', 'resolved') in ops
+      and ('draft-email', 'blocked-stored') in ops,
+      str(sorted(ops)))
 csv = c.get(B + '/export.csv')
 check('csv', csv.status_code == 200 and csv.text.count('\n') > 292)
 
-# ---- market intelligence track ----
+# ---- market intelligence track (workbook + TR3 Jev-extracted) ----
+# Expected values are DERIVED from the frozen corpus files, never
+# hard-coded: June2026.json (131 workbook rows, provenance=workbook) plus
+# the adapter output June2026-extracted.json (provenance=extracted).
+import json
+import csv as _csv
+import io as _io
+from collections import Counter as _Counter
+mxt = json.loads((PKG / 'data/ingested/matrix/June2026.json').read_text())
+mxe = (json.loads((Path(MATRIX_DIR) / 'June2026-extracted.json').read_text())
+       if MATRIX_DIR else {'rows': []})
+mrows = mxt['rows'] + mxe['rows']
+exp_total = len(mrows)
+exp_size = dict(_Counter(r['size'] for r in mrows))
+exp_comp = dict(_Counter(r.get('company') or r.get('owner') for r in mrows))
+exp_months = sorted({r['date'][:7] for r in mrows})
 mx = c.get(B + '/matrix').json()
-check('matrix-131', mx['total'] == 131, 'total=%s' % mx['total'])
-check('matrix-sizes', {s['size']: s['n'] for s in mx['by_size']}
-      == {'9.625': 66, '13.375': 63, '18.625': 2},
+check('matrix-total', mx['total'] == exp_total,
+      'total=%s exp=%s' % (mx['total'], exp_total))
+check('matrix-sizes', {s['size']: s['n'] for s in mx['by_size']} == exp_size,
       str({s['size']: s['n'] for s in mx['by_size']}))
-check('matrix-companies', {s['company']: s['n'] for s in mx['by_company']}
-      == {'WFD': 48, 'HAL': 45, 'FET': 27, 'TAM': 11},
+check('matrix-companies',
+      {s['company']: s['n'] for s in mx['by_company']} == exp_comp,
       str({s['company']: s['n'] for s in mx['by_company']}))
-check('matrix-month-june', [m['month'] for m in mx['by_month']] == ['2026-06'])
+check('matrix-months', [m['month'] for m in mx['by_month']] == exp_months,
+      str([m['month'] for m in mx['by_month']]))
 mxf = c.get(B + '/matrix?size=13.375&company=HAL').json()
 check('matrix-filter', mxf['total'] > 0 and all(
     r['size'] == '13.375' and r['company'] == 'HAL' for r in mxf['rows']))
+june1 = sum(1 for r in mrows if r['date'] == '2026-06-01')
 mxj = c.get(B + '/matrix?month=2026-06').json()
-check('matrix-june-june1', sum(1 for r in mxj['rows'] if r['date'] == '2026-06-01') == 6)
+check('matrix-june-june1',
+      sum(1 for r in mxj['rows'] if r['date'] == '2026-06-01') == june1,
+      'june1=%d' % june1)
 mxc = c.get(B + '/matrix/export.csv')
-check('matrix-csv', mxc.status_code == 200 and mxc.text.count('\n') == 132,
-      'lines=%d' % mxc.text.count('\n'))
+mbody = list(_csv.reader(_io.StringIO(mxc.text)))
+check('matrix-csv', mxc.status_code == 200 and len(mbody) == exp_total + 1,
+      'lines=%d exp=%d' % (len(mbody), exp_total + 1))
+check('matrix-csv-provenance-col',
+      mbody[0][-2:] == ['Source Page', 'Provenance'], str(mbody[0]))
+bad_cells = [cell for row in mbody[1:] for cell in row
+             if cell and cell[:1] in '=+@-\t\r']
+check('matrix-csv-formula-safe', not bad_cells, str(bad_cells[:5]))
+wb_csv = [row for row in mbody[1:] if row[-1] == 'workbook']
+ex_csv = [row for row in mbody[1:] if row[-1] == 'extracted']
+check('matrix-csv-workbook-131', len(wb_csv) == 131, str(len(wb_csv)))
+check('matrix-csv-workbook-pages', {row[-2] for row in wb_csv} == {'workbook'},
+      str({row[-2] for row in wb_csv}))
+check('matrix-csv-extracted-pages', len(ex_csv) == len(mxe['rows']) and all(
+    row[-2].isdigit() for row in ex_csv), 'n=%d' % len(ex_csv))
+
+# ---- T3 source_page lineage (no-invent rule) ----
+# Workbook-sourced rows honestly carry source_page='workbook';
+# only verified report-extracted rows carry an integer page. No NULLs.
+db2 = sqlite3.connect(str(db))
+db2.row_factory = sqlite3.Row
+null_pages = db2.execute(
+    'SELECT COUNT(*) c FROM matrix_rows WHERE source_page IS NULL').fetchone()['c']
+check('matrix-no-null-page', null_pages == 0, 'nulls=%d' % null_pages)
+wb_pages = db2.execute(
+    "SELECT COUNT(*) c FROM matrix_rows WHERE source_page='workbook'").fetchone()['c']
+check('matrix-workbook-pages', wb_pages == 131, 'workbook=%d' % wb_pages)
+wb_ext = db2.execute(
+    "SELECT COUNT(*) c FROM matrix_rows WHERE extraction='workbook'").fetchone()['c']
+check('matrix-workbook-extraction', wb_ext == 131, 'ext=%d' % wb_ext)
+ex_rows = db2.execute(
+    'SELECT * FROM matrix_rows WHERE extraction=\'extracted\'').fetchall()
+check('matrix-extracted-count', len(ex_rows) == len(mxe['rows']),
+      'exp=%d' % len(mxe['rows']))
+check('matrix-extracted-page-int',
+      all(r['source_page'].isdigit() for r in ex_rows))
+check('matrix-extracted-file', all(
+    r['source_file'] and r['source_file'].endswith('.pdf') for r in ex_rows))
+check('matrix-extractions-honest', {r[0] for r in db2.execute(
+    'SELECT DISTINCT extraction FROM matrix_rows')} == ({'workbook', 'extracted'} if mxe['rows'] else {'workbook'}))
+wb_db = sorted((r['date'], r['rig'].upper(), r['well'].upper(), r['size'],
+                r['company'].upper())
+               for r in db2.execute(
+    "SELECT date,rig,well,size,company FROM matrix_rows "
+    "WHERE extraction='workbook'"))
+wb_src = sorted((r['date'], r['rig'].upper(), r['well'].upper(), r['size'],
+                 r['company'].upper()) for r in mxt['rows'])
+check('matrix-workbook-not-overwritten', wb_db == wb_src,
+      '%d vs %d rows' % (len(wb_db), len(wb_src)))
+db2.close()
+check('matrix-lineage-honest',
+      mx['lineage'] == {'with_source_page': len(mxe['rows']),
+                        'total': exp_total},
+      str(mx['lineage']))
+
+# Regressions are independent of the held generated JSON (test_jev_repair.py).
+allmx = c.get(B + '/matrix?limit=5000').json()
+check('tr3-matrix-api-extracted', len([r for r in allmx['rows']
+      if r.get('extraction') == 'extracted']) == len(mxe['rows']))
+check('tr3-matrix-api-workbook', len([r for r in allmx['rows']
+      if r.get('extraction') == 'workbook']) == 131)
+check('tr3-csv-guard', plugin_api._csv_cell('=1+1').startswith("'")
+      and plugin_api._csv_cell('9.625') == '9.625')
+
+# ---- Phase 4 multi-client (one codebase, one workspace per client) ----
+import clients as clmod
+check('client-default', clmod.DEFAULT_CLIENT == 'orio-ops')
+try:
+    clmod.check_slug('../evil')
+    bad_slug_ok = False
+except ValueError:
+    bad_slug_ok = True
+check('client-slug-rejects', bad_slug_ok)
+r404 = c.get(B + '/health?client=no-such-client-zzz')
+check('client-unknown-404', r404.status_code == 404, str(r404.status_code))
+rbad = c.get(B + '/health?client=../evil')
+check('client-badslug-400', rbad.status_code == 400, str(rbad.status_code))
+h0 = c.get(B + '/health').json()
+check('client-default-health',
+      h0['client'] == 'orio-ops' and h0['ok'] is True
+      and h0['db'].replace('\\', '/').endswith('state/orio-ops/orio_demo.db'),
+      str(h0))
+# second client DB in the same throwaway home: same code, separate file
+import build_db as _bd
+_bd.main(BUILD_ARGS + ['--client', 'demo-client-2', '--quiet'])
+db2 = Path(os.environ['HERMES_HOME']) / 'state' / 'demo-client-2' / 'orio_demo.db'
+check('client2-db-built', db2.exists(), str(db2))
+clmod.save_config(Path(os.environ['HERMES_HOME']),
+                  clmod.default_config('demo-client-2', 'Suite Probe 2'))
+h2 = c.get(B + '/health?client=demo-client-2').json()
+check('client2-health',
+      h2['ok'] is True and h2['client'] == 'demo-client-2'
+      and 'demo-client-2' in h2['db'].replace('\\', '/'), str(h2))
+m2 = c.get(B + '/meta?client=demo-client-2').json()
+check('client2-meta',
+      m2['client'] == 'demo-client-2' and m2['demo_date'] == '2026-10-12'
+      and len(m2['report_dates']) == 92, str(m2['demo_date']))
+hh = c.get(B + '/health?client=orio-ops',
+           headers={'x-orio-client': 'demo-client-2'}).json()
+check('client-header-wins', hh['client'] == 'demo-client-2', str(hh))
+# write isolation: a client-2 approval must not touch client #1
+ap2 = c.post(B + '/actions/a-sp93-dispatch/decision?client=demo-client-2',
+             json={'decision': 'approve', 'actor': 'Client2Probe'}).json()
+last0 = next(a['last_decision']
+             for a in c.get(B + '/actions').json()['actions']
+             if a['id'] == 'a-sp93-dispatch')
+last2 = next(a['last_decision']
+             for a in c.get(B + '/actions?client=demo-client-2').json()['actions']
+             if a['id'] == 'a-sp93-dispatch')
+check('client-write-isolated',
+      ap2['actor'] == 'Client2Probe'
+      and last2['actor'] == 'Client2Probe'
+      and last0['actor'] == 'Probe',
+      'c1=%s c2=%s' % (last0['actor'], last2['actor']))
+cls = c.get(B + '/clients').json()
+slugs = {x['client'] for x in cls['clients']}
+check('clients-list',
+      cls['default'] == 'orio-ops'
+      and {'orio-ops', 'demo-client-2'} <= slugs, str(sorted(slugs)))
+cp = c.get(B + '/clients/demo-client-2').json()
+check('clients-profile',
+      cp['profile']['client'] == 'demo-client-2'
+      and cp['profile']['channels']['email']['state'] == 'blocked'
+      and cp['db_exists'] is True, str(cp['profile']['client']))
+check('clients-unknown-404',
+      c.get(B + '/clients/no-such-client-zzz').status_code == 404)
+clsrc = (PKG / 'dashboard' / 'clients.py').read_text()
+check('clients-no-net', all(('import ' + m) not in clsrc and ('from ' + m) not in clsrc
+                            for m in ['socket', 'urllib', 'httpx', 'requests', 'smtplib', 'email.mime']))
+check('clients-no-creds', 'api_key' not in clsrc.lower()
+      and 'passwd' not in clsrc.lower()
+      and 'BEGIN ' not in clsrc)
+obsrc = (PKG / 'tools' / 'onboard_client.sh').read_text()
+check('onboard-no-net', all(t not in obsrc for t in ['curl', 'wget', 'ssh '])
+      and 'api_key' not in obsrc.lower(), 'static scan')
 
 src = (PKG / 'dashboard' / 'plugin_api.py').read_text()
 check('no-net', all(('import ' + m) not in src and ('from ' + m) not in src
                     for m in ['socket', 'urllib', 'httpx', 'requests', 'smtplib', 'email.mime']))
+chsrc = (PKG / 'dashboard' / 'channels.py').read_text()
+check('channels-no-net', all(('import ' + m) not in chsrc and ('from ' + m) not in chsrc
+                             for m in ['socket', 'urllib', 'httpx', 'requests', 'smtplib', 'email.mime']))
+check('channels-no-creds', 'api_key' not in chsrc.lower()
+      and 'passwd' not in chsrc.lower()
+      and 'BEGIN ' not in chsrc)
 print('FAILURES:', fails if fails else 'none')
 sys.exit(1 if fails else 0)

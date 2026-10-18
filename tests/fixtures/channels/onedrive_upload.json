@@ -1,0 +1,7 @@
+{
+  "name": "lane-f-harmless-probe.txt",
+  "size_bytes": 64,
+  "remote_folder": "/ORIO-TEST-lane-f",
+  "ref": "onedrive:fixture-001",
+  "note": "OFFLINE FIXTURE. Harmless probe file for a future isolated round-trip (upload/download/delete inside the dedicated test folder only). Never uploaded by any test."
+}

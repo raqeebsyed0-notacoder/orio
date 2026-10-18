@@ -7,6 +7,44 @@ Last updated: 2026-10-12 (Phase 1). Earlier: 2026-10-06 (demo baseline).
 **Phase 1 shipped: multi-day ingestion + market-intelligence track.**
 Backend suite 24/24 PASS (was 14). UI ESM gate clean. Three copies in sync.
 
+**Phase 2 shipped 2026-10-15 (T5): channel seams, all BLOCKED.**
+`dashboard/channels.py` defines the `DeliveryChannel` protocol
+(`prepare`/`deliver`/`status`) with `BlockedChannel` stubs for
+`email` / `onedrive` / `telegram` — blocked x3, each carrying its reason
+and its documented unblock-day adapter (himalaya / rclone or microsoft365 /
+gateway telegram). `POST /drafts/email` shapes the same content as a
+delivery payload (recipient, subject, body, attachments), prepares it
+through the blocked email channel, and stores it in the local
+`delivery_outbox` table (`state='blocked'`); `deliver()` is never called.
+`GET /mdd/preview` returns its MDD delivery payload the same way (preview
+only, not stored). New reads: `GET /channels/status`,
+`GET /delivery/outbox`. Backend suite 38/38 PASS (30 prior + 8 channel
+checks). No credentials in repo; nothing sends.
+
+**Phase 3 shipped 2026-10-15 (T6): hardening.** Approvals write
+`actor`/`actor_role`/`actor_source` (`gateway` header wins, forged
+client claim vs header rejected 400, else `client`/`default`);
+`POST /exceptions/{id}/resolve` attributes the same way. New read
+`GET /ops/log` surfaces approval writes + errors beyond `/health`.
+README is real (product + commands); this file stays the session handoff.
+CI is `bash tools/ci.sh` (suite + ESM gate), also wired as the local
+pre-commit hook. Suite 46/46 PASS (38 prior + 8 Phase 3 checks), ESM clean.
+
+**Phase 4 shipped 2026-10-15 (T7): multi-client, no fork.** One codebase
+serves every client from `<HERMES_HOME>/state/<client>/` — no hardcoded
+`orio-ops` path remains in backend or builder. `dashboard/clients.py`
+owns slugs, per-client DB/config paths, and config profiles (folders,
+channels, cadence); every API route takes `x-orio-client` /
+`?client=` (default #1, unknown slugs 404, API never auto-creates);
+`data/build_db.py` takes `--client`; `tools/onboard_client.sh` onboards
+= new folder + profile + credential placeholders. Client #2 dry-run
+`demo-client-2` onboard clean 2026-10-15 (profile + creds README +
+incoming/, 92 days / 26415 blocks / 131 matrix rows, client #1 untouched).
+New reads: `GET /clients`, `GET /clients/{slug}`. Suite 62/62 PASS
+(46 prior + 16 Phase 4: isolation, header-wins, unknown-404, badslug-400,
+write-isolation, no-net/no-creds), ESM clean, copies in sync (clients.py
+9110c08a). `ORIO_TRAINING_REPORT.md` is the T1-T7 proof log.
+
 The plugin now reads more than one report day and carries the competitor
 matrix as a first-class, separate track.
 
@@ -117,10 +155,19 @@ bash tools/sync_ui.sh
    with the 2 supervisor-flagged rows surfaced as corrections. Extraction run
    in progress (`05_Architecture/june_matrix.py`).
 2. Ingest the remaining 80 Jun–Aug + 11 Sep MRs into the day index.
-3. Rows in `matrix_rows` carry `source_page` only when extracted from a report;
-   workbook-sourced rows show "workbook". The June extraction closes this.
+3. CLOSED 2026-10-15 (T3 t_ed20d406): rows in `matrix_rows` carry an
+   integer `source_page` only when a verified MR extraction proves the row
+   came from a report; workbook-sourced rows honestly carry
+   `source_page='workbook'` (TEXT column, 0 NULLs, never a guessed page).
+   June split verified against T1 output (`06_Working-Notes/june-matrix-run.json`:
+   v1 extractor matched 11/131, missing 117, 1017 over-extracted rows, matched
+   pairs not persisted; anchor flaw CONFIRMED T1b) — no honest report-page
+   attachment possible, so June stands at workbook 131 / report-confirmed 0.
+   `/matrix` lineage reports 0 of 131 with page; suite 32/32 PASS.
 4. Operator render QA on the new Market Intel view.
-5. Phase 2 (channel seams), Phase 3 (hardening), Phase 4 (multi-client) — see
+5. Phase 2 CLOSED 2026-10-15 (T5 t_6cebb14d): channel seams ship BLOCKED
+   x3 with payloads stored locally, never sent. Phase 3 (hardening),
+   Phase 4 (multi-client) — see
    `06_Working-Notes/next-plan-of-action-2026-10-12.md`.
 
 ## Do NOT
@@ -136,20 +183,31 @@ bash tools/sync_ui.sh
   (repo: https://github.com/raqeebsyed0-notacoder/orio.git, package at root)
   - `desktop/plugin.js` — all UI (single ESM file)
   - `dashboard/plugin_api.py` — backend (FastAPI, stdlib only)
+  - `dashboard/channels.py` — Phase 2 DeliveryChannel protocol +
+    BlockedChannel stubs (email/onedrive/telegram, all BLOCKED; no
+    sockets, no credentials; unblock-day adapters documented only)
   - `plugin.yaml` + `dashboard/manifest.json` + `__init__.py` (no-op register)
   - `data/build_db.py` + `data/mr_index.json` + `data/seed_cases.json` — DB build
-  - `tests/run_api.py` — 14-check backend suite (throwaway home)
+  - `tests/run_api.py` — 46-check backend suite (throwaway home)
   - `README.md`, `DEMO_WALKTHROUGH.md` (10-scene recording flow), `DESIGN.md` (UI contract)
 - Installed backend: `C:/Users/THinkPad/AppData/Local/hermes/plugins/euphoria-orio-operations/`
 - Loaded UI copy: `C:/Users/THinkPad/AppData/Local/hermes/desktop-plugins/euphoria-orio-operations/plugin.js`
-- Demo DB: `C:/Users/THinkPad/AppData/Local/hermes/state/orio-ops/orio_demo.db`
+- Demo DB (per-client, Phase 4): `<HERMES_HOME>/state/<client>/orio_demo.db`
+  (client #1 `orio-ops` = Ajeez; client #2 `demo-client-2` = dry-run).
+  Under this profile: `C:/Users/THinkPad/AppData/Local/hermes/profiles/ajeez-orio/state/<client>/orio_demo.db`.
+  The old unscoped `.../hermes/state/orio-ops/orio_demo.db` (Oct 5,
+  pre-Phase-1) is unread by the runtime — delete it when convenient.
 - System reference: `D:/12_projects/Innovex (ajeez)/Innovex_Ajeez_90_Day_AI_Operations_Architecture.html`
 
 ## Verified
 
-- Backend 14/14 PASS (292 count, HP-707 cycles, SP-32 conflict, SP-262 MDD block,
+- Backend 62/62 PASS (292 count, HP-707 cycles, SP-32 conflict, SP-262 MDD block,
   approve-mutates-demo, blocked-409, reject/incorrect, MDD missing markers,
-  email never sends, CSV 292+ rows, zero network imports).
+  email never sends, CSV 292+ rows, zero network imports,
+  8 Phase-3 actor/gateway/ops-log checks,
+  16 Phase-4 multi-client checks: default/#2 health+meta, header-wins,
+  unknown-404, badslug-400, write-isolation, clients list/profile,
+  clients/channels/onboard no-net/no-creds).
 - `node --check` clean on installed UI file. Zero em-dashes, zero hardcoded
   colors, zero lorem/emoji (grep-verified).
 - Screenshot-verified: Today renders with live data, counts 2/8/292/6.
@@ -226,14 +284,13 @@ bash tools/sync_ui.sh
 # git repo (source of truth): https://github.com/raqeebsyed0-notacoder/orio.git
 cd "D:/12_projects/Innovex (ajeez)/orio-operations-plugin"
 git pull --rebase && git push
-# edit UI, then sync both copies + syntax check
-SRC="D:/12_projects/Innovex (ajeez)/orio-operations-plugin/desktop/plugin.js"
-DST1="C:/Users/THinkPad/AppData/Local/hermes/plugins/euphoria-orio-operations/desktop/plugin.js"
-DST2="C:/Users/THinkPad/AppData/Local/hermes/desktop-plugins/euphoria-orio-operations/plugin.js"
-cp "$SRC" "$DST1" && mkdir -p "$(dirname "$DST2")" && cp "$SRC" "$DST2"
-node --check "$DST2"
-# backend regression (throwaway home, safe)
-<C:/Users/THinkPad/AppData/Local/hermes/hermes-agent/venv/Scripts/python.exe> "D:/12_projects/Innovex (ajeez)/orio-operations-plugin/tests/run_api.py"
-# clean demo rebuild
+# CI gate (suite + ESM) — also runs automatically on commit
+bash tools/ci.sh
+# edit UI/backend, then sync both copies + gates + suite (the ONLY sync path)
+bash tools/sync_ui.sh
+# clean demo rebuild, then sync
 python3 "D:/12_projects/Innovex (ajeez)/orio-operations-plugin/data/build_db.py"
+bash tools/sync_ui.sh
+# onboard a new client (folder + profile + creds placeholder + DB, no fork)
+bash tools/onboard_client.sh <slug> "[display name]"
 ```

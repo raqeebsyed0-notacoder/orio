@@ -1,0 +1,7 @@
+{
+  "recipient": "test-recipient@example.invalid",
+  "subject": "ORIO MDD HP-701 / THRY-961602 - OFFLINE FIXTURE (never sent)",
+  "body": "To: test-recipient@example.invalid\nSubject: offline fixture\n\nFinding: offline test only. This payload is prepared and stored locally; nothing is sent.",
+  "attachments": [],
+  "ref": "draft:fixture-001"
+}

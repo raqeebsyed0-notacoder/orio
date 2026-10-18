@@ -1,0 +1,12 @@
+[
+  {"message": "request failed: 429 Too Many Requests", "kind": "rate_limited"},
+  {"message": "upload throttled by service, back off", "kind": "rate_limited"},
+  {"message": "connection timed out after 30s", "kind": "timeout"},
+  {"message": "deadline exceeded while waiting", "kind": "timeout"},
+  {"message": "503 Service Unavailable", "kind": "unavailable"},
+  {"message": "connection reset by peer, temporarily failing", "kind": "unavailable"},
+  {"message": "401 unauthorized: bad credentials", "kind": "auth"},
+  {"message": "forbidden: invalid token", "kind": "auth"},
+  {"message": "something completely unexpected happened", "kind": "unknown"},
+  {"message": "", "kind": "unknown"}
+]

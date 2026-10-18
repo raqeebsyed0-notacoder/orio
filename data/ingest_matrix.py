@@ -3,10 +3,12 @@
 Sheet1 columns (verified against the June workbook):
     1 Sno. | 2 Date RIH | 3 Rig | 4 Well | 5 Size | 6 Company | 7 Special Remarks
 
-Produces matrix rows with page lineage left EMPTY here: this ingester only
-reads Ajeez's own workbook. Page lineage is attached by the MR extraction
-path (see june_matrix.py) so a row can always be traced to the report page
-it came from.
+Produces matrix rows with page lineage marked HONESTLY here: this ingester
+only reads Ajeez's own workbook, so every row is marked source_page
+'workbook' (never NULL, never an invented page number). Real report page
+numbers are attached only by the MR extraction path (see june_matrix.py),
+which writes the integer page into source_page for rows it proves came
+from a report.
 
 Usage:
     python3 ingest_matrix.py <matrix.xlsx> [--json OUT]
@@ -61,7 +63,8 @@ def ingest_matrix(path: Path) -> dict:
             'company': (_txt(r[5]) or '').upper(),
             'remarks': _txt(r[6]) if len(r) > 6 else None,
             'source_file': path.name,
-            'source_page': None,   # attached by the MR extraction path
+            'source_page': 'workbook',   # workbook-sourced: honest marker, never NULL
+            'extraction': 'workbook',
         })
     wb.close()
     return {

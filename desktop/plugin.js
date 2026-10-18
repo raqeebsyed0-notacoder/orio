@@ -553,7 +553,7 @@ function ActionsView({ openJob }) {
                     jsx('div', { className: `${ID}-kv`, children: jsx('span', { className: `${ID}-sub`, children: 'If approved: ' + a.effect }) }),
                     a.last_decision ? jsx('div', {
                       className: `${ID}-kv`,
-                      children: jsx('span', { className: `${ID}-sub`, children: 'Last: ' + a.last_decision.decision + ' at ' + a.last_decision.at + (a.last_decision.note ? ', ' + a.last_decision.note : '') })
+                      children: jsx('span', { className: `${ID}-sub`, children: 'Last: ' + a.last_decision.decision + ' at ' + a.last_decision.at + (a.last_decision.actor ? ' by ' + a.last_decision.actor + '/' + (a.last_decision.actor_role || '?') : '') + (a.last_decision.note ? ', ' + a.last_decision.note : '') })
                     }) : null,
                     jsxs('div', {
                       className: `${ID}-actions`,
@@ -1171,24 +1171,62 @@ function HistoryView() {
 
 /* ------------------------------- Expansion ------------------------------- */
 function MarketIntelView() {
-  const [month, setMonth] = useState('')
+  const [start, setStart] = useState('')
+  const [end, setEnd] = useState('')
   const [fSize, setFSize] = useState('')
   const [fCo, setFCo] = useState('')
   const [fText, setFText] = useState('')
   const [page, setPage] = useState(0)
+  const [selRow, setSelRow] = useState(null)
+  const [orioSel, setOrioSel] = useState(null)
   const per = 50
-  const qs = []
-  if (month) qs.push('month=' + encodeURIComponent(month))
-  if (fSize) qs.push('size=' + encodeURIComponent(fSize))
-  if (fCo) qs.push('company=' + encodeURIComponent(fCo))
-  const q = useApi('/matrix' + (qs.length ? '?' + qs.join('&') : ''))
-  useEffect(() => { setPage(0) }, [month, fSize, fCo, fText])
+  const selQs = () => {
+    const qs = []
+    if (start) qs.push('start=' + encodeURIComponent(start))
+    if (end) qs.push('end=' + encodeURIComponent(end))
+    if (fSize) qs.push('size=' + encodeURIComponent(fSize))
+    if (fCo) qs.push('company=' + encodeURIComponent(fCo))
+    return qs.join('&')
+  }
+  const q = useApi('/matrix' + (selQs() ? '?' + selQs() : ''))
+  useEffect(() => { setPage(0) }, [start, end, fSize, fCo, fText])
   const allRows = (q.data && q.data.rows) || []
   const bySize = (q.data && q.data.by_size) || []
   const byCo = (q.data && q.data.by_company) || []
   const byMonth = (q.data && q.data.by_month) || []
   const bySC = (q.data && q.data.by_size_company) || []
   const lineage = (q.data && q.data.lineage) || { with_source_page: 0, total: 0 }
+  const sel = (q.data && q.data.selection) || null
+  const compare = (q.data && q.data.period_compare) || null
+  const coverage = (q.data && q.data.coverage) || null
+  const pct = n => (n === null || n === undefined || n === '') ? 'n/a' : (Number(n) * 100).toFixed(1) + '%'
+  const askOrio = () => {
+    api('/matrix/query' + (selQs() ? '?' + selQs() : '')).then(d => {
+      setOrioSel(d)
+      host.notify({ kind: 'info', message: 'ORIO selection: ' + d.total + ' rows.' })
+    }).catch(e => host.notify({ kind: 'error', message: 'ORIO query failed: ' + errText(e) }))
+  }
+  const dl = kind => {
+    // Same-dataset rule: the export URL carries selQs(), the exact
+    // range+filters driving /matrix above. ctx.rest result shape varies
+    // by shell, so coerce Blob / bytes / text; JSON-only shells cannot
+    // carry .xlsx bytes and surface the failure as a notice (endpoint
+    // itself is covered by the Lane C check script).
+    api('/matrix/export.' + kind + (selQs() ? '?' + selQs() : ''), { raw: true }).then(res => {
+      const mime = kind === 'xlsx'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'text/csv'
+      const blob = (typeof Blob !== 'undefined' && res instanceof Blob) ? res
+        : (res && res.byteLength !== undefined) ? new Blob([res], { type: mime })
+        : new Blob([typeof res === 'string' ? res : String(res === null || res === undefined ? '' : res)], { type: mime })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'orio_market_intel.' + kind
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 4000)
+    }).catch(e => host.notify({ kind: 'error', message: 'Export failed: ' + errText(e) }))
+  }
   const needle = fText.toUpperCase()
   const rows = useMemo(() => allRows.filter(r =>
     !needle || (textOf(r.date) + ' ' + textOf(r.rig) + ' ' + textOf(r.well) + ' ' +
@@ -1229,11 +1267,30 @@ function MarketIntelView() {
         jsxs('div', {
           className: `${ID}-toolbar`,
           children: [
-            byMonth.length > 1 ? jsx(SegmentedControl, {
-              value: month || 'all',
-              onChange: v => setMonth(v === 'all' ? '' : v),
-              options: [{ id: 'all', label: 'All' }].concat(
-                byMonth.map(m => ({ id: m.month, label: m.month })))
+            jsx('label', {
+              className: `${ID}-dim`,
+              children: ['From ', jsx('input', {
+                type: 'date', value: start, 'aria-label': 'Range start (event date)',
+                min: coverage && coverage.event_min ? coverage.event_min : undefined,
+                max: coverage && coverage.event_max ? coverage.event_max : undefined,
+                onChange: e => setStart(e.target.value),
+                style: { fontFamily: 'inherit', fontSize: '12px' }
+              })]
+            }),
+            jsx('label', {
+              className: `${ID}-dim`,
+              children: ['To ', jsx('input', {
+                type: 'date', value: end, 'aria-label': 'Range end (event date)',
+                min: coverage && coverage.event_min ? coverage.event_min : undefined,
+                max: coverage && coverage.event_max ? coverage.event_max : undefined,
+                onChange: e => setEnd(e.target.value),
+                style: { fontFamily: 'inherit', fontSize: '12px' }
+              })]
+            }),
+            (start || end) ? jsx(Button, {
+              size: 'xs', variant: 'ghost',
+              onClick: () => { setStart(''); setEnd('') },
+              children: 'Clear range'
             }) : null,
             jsx(SegmentedControl, {
               value: fSize || 'all',
@@ -1255,6 +1312,41 @@ function MarketIntelView() {
             jsx('span', { className: `${ID}-resultcount`, children: 'Showing ' + pageRows.length + ' of ' + rows.length })
           ]
         }),
+        jsxs('div', {
+          className: `${ID}-toolbar`,
+          children: [
+            jsx('span', {
+              className: `${ID}-dim`,
+              children: compare
+                ? ('This period ' + compare.current.n + ' vs prior ' + compare.previous.n +
+                  ' (' + (compare.delta >= 0 ? '+' : '') + compare.delta +
+                  (compare.pct_change === null || compare.pct_change === undefined
+                    ? ', no prior baseline' : ', ' + (compare.pct_change * 100).toFixed(1) + '%)'))
+                : 'Pick a From/To range to compare against the prior equal-length period.'
+            }),
+            jsx('span', {
+              className: `${ID}-dim`,
+              children: coverage
+                ? ('Coverage ' + coverage.event_min + '..' + coverage.event_max +
+                  ', ' + coverage.distinct_event_days + ' event days' +
+                  (coverage.last_update ? ', updated ' + coverage.last_update : ''))
+                : ''
+            }),
+            jsx('span', { className: `${ID}-resultcount`, children: '' }),
+            jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => dl('csv'), children: 'Export CSV' }),
+            jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => dl('xlsx'), children: 'Export XLSX' }),
+            jsx(Button, { size: 'xs', onClick: askOrio, children: 'Ask ORIO (this selection)' })
+          ]
+        }),
+        orioSel ? jsx('div', {
+          className: `${ID}-card`,
+          children: 'ORIO selection: ' + orioSel.total + ' rows' +
+            (orioSel.selection && orioSel.selection.start
+              ? (', ' + orioSel.selection.start + '..' + orioSel.selection.end) : ', all dates') +
+            (orioSel.selection && orioSel.selection.size ? (', size ' + orioSel.selection.size) : '') +
+            (orioSel.selection && orioSel.selection.company ? (', ' + orioSel.selection.company) : '') +
+            '. Same selection reproduces this row set in /matrix and both exports.'
+        }) : null,
         jsx('div', {
           className: `${ID}-todaygrid`,
           children: [
@@ -1268,24 +1360,53 @@ function MarketIntelView() {
                       className: `${ID}-table`,
                       'aria-label': 'Competitor matrix rows',
                       children: [
-                        jsx(THead, { cols: ['Date RIH', 'Rig', 'Well', 'Size', 'Company', 'Remarks', 'Source'] }),
+                        jsx(THead, { cols: ['Event (RIH)', 'Report', 'Rig', 'Well', 'Size', 'Company', 'Remarks', 'Evidence'] }),
                         jsx('tbody', {
-                          children: pageRows.map((r, i) => jsx('tr', {
-                            key: r.id || (r.date + r.rig + r.well + i),
-                            children: [
-                              jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: textOf(r.date) }) }),
-                              jsx('td', { children: jsx('strong', { children: r.rig }) }),
-                              jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
-                              jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: sizeLbl(r.size) }) }),
-                              jsx('td', { children: jsx(Pill, { status: r.company }) }),
-                              jsx('td', { children: textOf(r.remarks) || jsx('span', { className: `${ID}-dim`, children: 'None' }) }),
-                              jsx('td', {
-                                children: r.source_page
-                                  ? jsx('span', { className: `${ID}-mono`, children: 'p' + r.source_page })
-                                  : jsx('span', { className: `${ID}-dim`, children: 'workbook' })
+                          children: pageRows.flatMap((r, i) => {
+                            const rid = r.id || (r.date + r.rig + r.well + i)
+                            const open = selRow === rid
+                            const ev = r.evidence || {}
+                            const main = jsx('tr', {
+                              key: rid,
+                              onClick: () => setSelRow(open ? null : rid),
+                              style: { cursor: 'pointer' },
+                              title: 'Click for evidence drilldown',
+                              children: [
+                                jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: textOf(r.event_date || r.date) }) }),
+                                jsx('td', { children: r.report_date ? jsx('span', { className: `${ID}-mono`, children: textOf(r.report_date) }) : jsx('span', { className: `${ID}-dim`, children: 'workbook' }) }),
+                                jsx('td', { children: jsx('strong', { children: r.rig }) }),
+                                jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
+                                jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: sizeLbl(r.size) }) }),
+                                jsx('td', { children: jsx(Pill, { status: r.company }) }),
+                                jsx('td', { children: textOf(r.remarks) || jsx('span', { className: `${ID}-dim`, children: 'None' }) }),
+                                jsx('td', {
+                                  children: ev.has_page
+                                    ? jsx('span', { className: `${ID}-mono`, children: 'p' + r.source_page })
+                                    : jsx('span', { className: `${ID}-dim`, children: 'workbook' })
+                                })
+                              ]
+                            })
+                            if (!open) return [main]
+                            return [main, jsx('tr', {
+                              key: rid + ':ev',
+                              children: jsx('td', {
+                                colSpan: 8,
+                                children: jsx('div', {
+                                  className: `${ID}-card`,
+                                  children: [
+                                    'Evidence drilldown — event (RIH) date ' + textOf(r.event_date || r.date) +
+                                    ' vs report date ' + textOf(r.report_date || 'n/a (workbook row)') + '. ',
+                                    'Provenance ' + textOf(ev.provenance || r.extraction || 'workbook') +
+                                    ', source ' + textOf(r.source_file || '?') +
+                                    (ev.has_page ? (', page ' + r.source_page) : ', no page (workbook)') + '.',
+                                    (r.source_event_times && r.source_event_times.length)
+                                      ? ' Event times ' + r.source_event_times.join('; ') + '.'
+                                      : ''
+                                  ].join('')
+                                })
                               })
-                            ]
-                          }))
+                            })]
+                          })
                         })
                       ]
                     })
@@ -1334,7 +1455,7 @@ function MarketIntelView() {
                           className: `${ID}-barrow`, key: c.company,
                           onClick: () => setFCo(c.company),
                           children: [
-                            jsx('span', { className: `${ID}-barname`, children: c.company }),
+                            jsx('span', { className: `${ID}-barname`, children: c.company + ' ' + pct(c.share) }),
                             jsx('span', { className: `${ID}-bar`, style: { width: (c.n / Math.max(1, ...byCo.map(y => y.n)) * 100) + '%' } }),
                             jsx('span', { className: `${ID}-barnum`, children: String(c.n) })
                           ]
@@ -1723,6 +1844,15 @@ export default {
         id: 'refresh',
         area: PALETTE_AREA,
         data: { id: ID + '.refresh', label: 'ORIO: Refresh Data', keywords: ['orio', 'refresh'], run: () => { refreshAll(); host.notify({ kind: 'info', message: 'ORIO data refresh requested.' }) } }
+      },
+      {
+        id: 'market',
+        area: PALETTE_AREA,
+        data: {
+          id: ID + '.market', label: 'ORIO: Market Intel (date range, shares, export)',
+          keywords: ['orio', 'market', 'mi', 'matrix', 'competitor', 'share', 'export', 'xlsx'],
+          run: () => { $view.set('market'); storageSet('view', 'market'); host.navigate(PAGE) }
+        }
       }
     ])
     return dispose
