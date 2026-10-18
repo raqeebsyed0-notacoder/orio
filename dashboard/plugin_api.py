@@ -599,7 +599,11 @@ def _matrix_coverage(con: sqlite3.Connection) -> dict[str, Any]:
     r = con.execute('SELECT MIN(date) mn, MAX(date) mx,'
                     ' COUNT(DISTINCT date) days, COUNT(*) n'
                     ' FROM matrix_rows').fetchone()
-    last = con.execute('SELECT MAX(ingested_at) m FROM reports').fetchone()
+    last = None
+    try:
+        last = con.execute('SELECT MAX(ingested_at) m FROM reports').fetchone()
+    except Exception:
+        last = None
     try:
         rep_days = con.execute('SELECT COUNT(*) c FROM reports').fetchone()['c']
     except Exception:
