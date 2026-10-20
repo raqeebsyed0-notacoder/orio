@@ -26,6 +26,10 @@ import plugin_api  # noqa: E402
 
 @pytest.fixture(scope='module')
 def client():
+    # Pin a private home at fixture time: whole-dir runs import every
+    # suite module first (each one sets HERMES_HOME at import), so the
+    # home must be claimed here, not at import, or suites share a DB.
+    os.environ['HERMES_HOME'] = tempfile.mkdtemp(prefix='orio-test-api-home-')
     build_db.main()
     app = FastAPI()
     app.include_router(plugin_api.router, prefix='/api/plugins/euphoria-orio-operations')
@@ -39,12 +43,12 @@ def test_health(client):
 
 
 def test_rig_count_is_292(client):
-    r = client.get('/api/plugins/euphoria-orio-operations/rigs?limit=1')
+    r = client.get('/api/plugins/euphoria-orio-operations/rigs?limit=1&report_date=2026-09-19')
     assert r.json()['total'] == 292
 
 
 def test_hp707_search_returns_two_cycles(client):
-    r = client.get('/api/plugins/euphoria-orio-operations/rigs?q=HP-707')
+    r = client.get('/api/plugins/euphoria-orio-operations/rigs?q=HP-707&report_date=2026-09-19')
     wells = {x['well'] for x in r.json()['rows']}
     assert 'THRY-961602' in wells
     r2 = client.get('/api/plugins/euphoria-orio-operations/jobs/hp707now')
@@ -117,6 +121,6 @@ def test_export_csv(client):
 
 
 def test_no_network_imports():
-    src = (PKG / 'plugins' / 'euphoria-orio-operations' / 'dashboard' / 'plugin_api.py').read_text()
+    src = (PKG / 'dashboard' / 'plugin_api.py').read_text()
     for mod in ['socket', 'urllib', 'httpx', 'requests', 'smtplib', 'email.mime']:
         assert f'import {mod}' not in src and f'from {mod}' not in src, mod

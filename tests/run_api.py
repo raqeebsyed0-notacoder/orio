@@ -9,7 +9,8 @@ HERE = Path(__file__).resolve().parent
 PKG = HERE.parent
 sys.path.insert(0, str(PKG / 'dashboard'))
 sys.path.insert(0, str(PKG / 'data'))
-SCRATCH = Path(os.environ.get('ORIO_REPAIR_OUT') or os.environ['TMPDIR']).resolve()
+import tempfile as _tf
+SCRATCH = Path(os.environ.get('ORIO_REPAIR_OUT') or os.environ.get('TMPDIR') or _tf.gettempdir()).resolve()
 SCRATCH.mkdir(parents=True, exist_ok=True)
 os.environ['HERMES_HOME'] = tempfile.mkdtemp(prefix='orio-test-home-', dir=SCRATCH)
 MATRIX_DIR = os.environ.get('ORIO_TEST_MATRIX_DIR')
@@ -164,23 +165,34 @@ check('ops-log-visible',
 csv = c.get(B + '/export.csv')
 check('csv', csv.status_code == 200 and csv.text.count('\n') > 292)
 
-# ---- market intelligence track (workbook + TR3 Jev-extracted) ----
-# Expected values are DERIVED from the frozen corpus files, never
-# hard-coded: June2026.json (131 workbook rows, provenance=workbook) plus
-# the adapter output June2026-extracted.json (provenance=extracted).
+# ---- market intelligence track (Ajeez-ruled June, adjudicated v2) ----
+# Expected values are DERIVED from the frozen adjudicated batch, never
+# hard-coded: data/ingested/matrix/June2026-adjudicated-v2.json
+# (provenance=adjudicated, 135 rows with ruling status + location; the 13
+# innovex_own jobs fenced out of matrix_rows). The stale v1 workbook
+# (June2026.json) is retired; *-extracted.json never loads by default.
 import json
 import csv as _csv
 import io as _io
 from collections import Counter as _Counter
-mxt = json.loads((PKG / 'data/ingested/matrix/June2026.json').read_text())
-mxe = (json.loads((Path(MATRIX_DIR) / 'June2026-extracted.json').read_text())
-       if MATRIX_DIR else {'rows': []})
-mrows = mxt['rows'] + mxe['rows']
-exp_total = len(mrows)
-exp_size = dict(_Counter(r['size'] for r in mrows))
-exp_comp = dict(_Counter(r.get('company') or r.get('owner') for r in mrows))
-exp_months = sorted({r['date'][:7] for r in mrows})
-mx = c.get(B + '/matrix').json()
+from pathlib import Path as _Path
+_mdir = _Path(MATRIX_DIR) if MATRIX_DIR else PKG / 'data/ingested/matrix'
+_v2 = _mdir / 'June2026-adjudicated-v2.json'
+if not _v2.exists():
+    _v2 = PKG / 'data/ingested/matrix/June2026-adjudicated-v2.json'
+adj = json.loads(_v2.read_text())
+adj_rows = adj['rows']
+counted = [r for r in adj_rows if r['status'] == 'COUNTED']
+exp_total = len(counted)
+exp_all = len(adj_rows)
+exp_comp = dict(_Counter(r['company'] for r in counted if r['company'] != 'UNPROVEN'))
+exp_size = dict(_Counter(r['size'] for r in counted))
+exp_loc = dict(_Counter(r['location'] for r in counted if r['location']))
+exp_unproven = sum(1 for r in counted if r['company'] == 'UNPROVEN')
+exp_status = dict(_Counter(r['status'] for r in adj_rows))
+exp_boundary = sum(1 for r in counted if r.get('june_boundary'))
+exp_june = sum(1 for r in counted if (r['date'] or '')[:7] == '2026-06')
+mx = c.get(B + '/matrix?provenance=adjudicated&status=COUNTED').json()
 check('matrix-total', mx['total'] == exp_total,
       'total=%s exp=%s' % (mx['total'], exp_total))
 check('matrix-sizes', {s['size']: s['n'] for s in mx['by_size']} == exp_size,
@@ -188,79 +200,120 @@ check('matrix-sizes', {s['size']: s['n'] for s in mx['by_size']} == exp_size,
 check('matrix-companies',
       {s['company']: s['n'] for s in mx['by_company']} == exp_comp,
       str({s['company']: s['n'] for s in mx['by_company']}))
-check('matrix-months', [m['month'] for m in mx['by_month']] == exp_months,
-      str([m['month'] for m in mx['by_month']]))
-mxf = c.get(B + '/matrix?size=13.375&company=HAL').json()
+check('matrix-locations',
+      {s['location']: s['n'] for s in mx['by_location']} == exp_loc,
+      str({s['location']: s['n'] for s in mx['by_location']}))
+check('matrix-unproven', mx['unproven_company_rows'] == exp_unproven,
+      'unproven=%s exp=%s' % (mx['unproven_company_rows'], exp_unproven))
+check('matrix-innovex-fenced', mx['innovex_own']['count'] == adj['innovex_own_count']
+      and not any(r['company'] == 'INNOVEX' for r in mx['rows']),
+      str(mx['innovex_own']))
+check('matrix-prov-totals',
+      mx['totals_by_provenance'].get('adjudicated') == exp_total
+      and mx['totals_by_provenance'].get('extracted') == 0,
+      str(mx['totals_by_provenance']))
+mxall = c.get(B + '/matrix').json()
+check('matrix-all-statuses',
+      {s['status']: s['n'] for s in mxall['by_status']} == exp_status,
+      str({s['status']: s['n'] for s in mxall['by_status']}))
+check('matrix-all-total', mxall['total'] == exp_all,
+      'total=%s exp=%s' % (mxall['total'], exp_all))
+mxf = c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&size=13.375&company=HAL').json()
 check('matrix-filter', mxf['total'] > 0 and all(
     r['size'] == '13.375' and r['company'] == 'HAL' for r in mxf['rows']))
-june1 = sum(1 for r in mrows if r['date'] == '2026-06-01')
-mxj = c.get(B + '/matrix?month=2026-06').json()
+june1 = sum(1 for r in counted if r['date'] == '2026-06-01')
+mxj = c.get(B + '/matrix?month=2026-06&provenance=adjudicated&status=COUNTED').json()
 check('matrix-june-june1',
-      sum(1 for r in mxj['rows'] if r['date'] == '2026-06-01') == june1,
-      'june1=%d' % june1)
-mxc = c.get(B + '/matrix/export.csv')
+      sum(1 for r in mxj['rows'] if r['date'] == '2026-06-01') == june1
+      and mxj['total'] == exp_june,
+      'june1=%d june=%d' % (june1, mxj['total']))
+mxc = c.get(B + '/matrix/export.csv?provenance=adjudicated&status=COUNTED')
 mbody = list(_csv.reader(_io.StringIO(mxc.text)))
 check('matrix-csv', mxc.status_code == 200 and len(mbody) == exp_total + 1,
       'lines=%d exp=%d' % (len(mbody), exp_total + 1))
-check('matrix-csv-provenance-col',
-      mbody[0][-2:] == ['Source Page', 'Provenance'], str(mbody[0]))
+check('matrix-csv-header',
+      mbody[0][-4:] == ['Source Page', 'Location', 'Status', 'Provenance'], str(mbody[0]))
+check('matrix-csv-provenance-col', all(row[-1] == 'adjudicated' for row in mbody[1:]))
 bad_cells = [cell for row in mbody[1:] for cell in row
              if cell and cell[:1] in '=+@-\t\r']
 check('matrix-csv-formula-safe', not bad_cells, str(bad_cells[:5]))
-wb_csv = [row for row in mbody[1:] if row[-1] == 'workbook']
-ex_csv = [row for row in mbody[1:] if row[-1] == 'extracted']
-check('matrix-csv-workbook-131', len(wb_csv) == 131, str(len(wb_csv)))
-check('matrix-csv-workbook-pages', {row[-2] for row in wb_csv} == {'workbook'},
-      str({row[-2] for row in wb_csv}))
-check('matrix-csv-extracted-pages', len(ex_csv) == len(mxe['rows']) and all(
-    row[-2].isdigit() for row in ex_csv), 'n=%d' % len(ex_csv))
-
+# B4 alias wiring: report spellings resolve to canonical companies;
+# Resp.Co codes are rejected, never silently matched.
+hal_n = c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&company=HAL').json()['total']
+check('matrix-alias-howco',
+      c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&company=HOWCO').json()['total'] == hal_n
+      and c.get(B + '/matrix?company=HLB').json()['selection']['company'] == 'HAL',
+      'hal=%d' % hal_n)
+fet_n = c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&company=FET').json()['total']
+check('matrix-alias-davis',
+      c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&company=DAVIS-LYNCH').json()['total'] == fet_n,
+      'fet=%d' % fet_n)
+check('matrix-never-company',
+      c.get(B + '/matrix?company=WDV').status_code == 400
+      and c.get(B + '/matrix?company=HDV').status_code == 400
+      and c.get(B + '/matrix?company=TOD').status_code == 400)
+check('matrix-location-filter',
+      c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&location=offshore').json()['total']
+      == exp_loc.get('offshore', 0))
+check('matrix-status-filters',
+      c.get(B + '/matrix?provenance=adjudicated&status=PENDING_FILE').json()['total']
+      == exp_status.get('PENDING_FILE', 0)
+      and c.get(B + '/matrix?provenance=adjudicated&status=PENDING_RULING').json()['total']
+      == exp_status.get('PENDING_RULING', 0)
+      and c.get(B + '/matrix?provenance=adjudicated&status=EXCLUDED').json()['total']
+      == exp_status.get('EXCLUDED', 0))
+check('matrix-june-boundary',
+      sum(1 for r in c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&limit=5000').json()['rows']
+          if r.get('june_boundary')) == exp_boundary,
+      'boundary=%d' % exp_boundary)
+# M4: lane-7 views stay green but are visibly marked stale vs the rulings.
+check('matrix-lane7-stale',
+      all(c.get(B + u).json().get('stale') is True
+          for u in ('/intelligence/upcoming', '/intelligence/suppliers/first-seen',
+                    '/intelligence/tool-problems', '/intelligence/corrections')))
 # ---- T3 source_page lineage (no-invent rule) ----
-# Workbook-sourced rows honestly carry source_page='workbook';
-# only verified report-extracted rows carry an integer page. No NULLs.
+# Ajeez-ruled rows carry the ruled report citation verbatim (provenance
+# 'adjudicated', authority in evidence_json). No NULLs. Extracted rows
+# stay quarantined: a default build loads zero of them (M7).
 db2 = sqlite3.connect(str(db))
 db2.row_factory = sqlite3.Row
 null_pages = db2.execute(
     'SELECT COUNT(*) c FROM matrix_rows WHERE source_page IS NULL').fetchone()['c']
 check('matrix-no-null-page', null_pages == 0, 'nulls=%d' % null_pages)
-wb_pages = db2.execute(
-    "SELECT COUNT(*) c FROM matrix_rows WHERE source_page='workbook'").fetchone()['c']
-check('matrix-workbook-pages', wb_pages == 131, 'workbook=%d' % wb_pages)
-wb_ext = db2.execute(
-    "SELECT COUNT(*) c FROM matrix_rows WHERE extraction='workbook'").fetchone()['c']
-check('matrix-workbook-extraction', wb_ext == 131, 'ext=%d' % wb_ext)
-ex_rows = db2.execute(
-    'SELECT * FROM matrix_rows WHERE extraction=\'extracted\'').fetchall()
-check('matrix-extracted-count', len(ex_rows) == len(mxe['rows']),
-      'exp=%d' % len(mxe['rows']))
-check('matrix-extracted-page-int',
-      all(r['source_page'].isdigit() for r in ex_rows))
-check('matrix-extracted-file', all(
-    r['source_file'] and r['source_file'].endswith('.pdf') for r in ex_rows))
 check('matrix-extractions-honest', {r[0] for r in db2.execute(
-    'SELECT DISTINCT extraction FROM matrix_rows')} == ({'workbook', 'extracted'} if mxe['rows'] else {'workbook'}))
-wb_db = sorted((r['date'], r['rig'].upper(), r['well'].upper(), r['size'],
-                r['company'].upper())
+    'SELECT DISTINCT extraction FROM matrix_rows')} == {'adjudicated'})
+check('matrix-quarantine-default', db2.execute(
+    "SELECT COUNT(*) c FROM matrix_rows WHERE extraction = 'extracted'").fetchone()['c'] == 0)
+db_status = {r[0]: r[1] for r in db2.execute(
+    "SELECT COALESCE(status, 'NULL'), COUNT(*) FROM matrix_rows GROUP BY 1")}
+check('matrix-db-status', db_status == exp_status, str(db_status))
+db_comp = sorted((r['date'], r['rig'].upper(), r['well'].upper(), r['size'],
+                r['company'].upper(), r['location'], r['status'])
                for r in db2.execute(
-    "SELECT date,rig,well,size,company FROM matrix_rows "
-    "WHERE extraction='workbook'"))
-wb_src = sorted((r['date'], r['rig'].upper(), r['well'].upper(), r['size'],
-                 r['company'].upper()) for r in mxt['rows'])
-check('matrix-workbook-not-overwritten', wb_db == wb_src,
-      '%d vs %d rows' % (len(wb_db), len(wb_src)))
+    "SELECT date,rig,well,size,company,location,status FROM matrix_rows"))
+src_comp = sorted((r['date'], r['rig'].upper(), r['well'].upper(), r['size'],
+                 r['company'].upper(), r['location'], r['status'])
+                for r in adj_rows)
+check('matrix-db-matches-batch', db_comp == src_comp,
+      '%d vs %d rows' % (len(db_comp), len(src_comp)))
+check('matrix-db-companies', {r[4] for r in db_comp} <= {'WFD', 'HAL', 'FET', 'TAM', 'UNPROVEN'},
+      str({r[4] for r in db_comp}))
+check('matrix-db-no-respco', not ({r[4] for r in db_comp} & {'WDV', 'HDV', 'TOD'}))
+check('matrix-innovex-table', db2.execute(
+    'SELECT COUNT(*) c FROM innovex_own').fetchone()['c'] == adj['innovex_own_count'])
 db2.close()
+exp_with_page = sum(1 for r in counted if str(r['source_page']).isdigit())
 check('matrix-lineage-honest',
-      mx['lineage'] == {'with_source_page': len(mxe['rows']),
+      mx['lineage'] == {'with_source_page': exp_with_page,
                         'total': exp_total},
       str(mx['lineage']))
-
 # Regressions are independent of the held generated JSON (test_jev_repair.py).
 allmx = c.get(B + '/matrix?limit=5000').json()
-check('tr3-matrix-api-extracted', len([r for r in allmx['rows']
-      if r.get('extraction') == 'extracted']) == len(mxe['rows']))
-check('tr3-matrix-api-workbook', len([r for r in allmx['rows']
-      if r.get('extraction') == 'workbook']) == 131)
-check('tr3-csv-guard', plugin_api._csv_cell('=1+1').startswith("'")
+check('tr3-matrix-api-adjudicated', len([r for r in allmx['rows']
+      if r.get('extraction') == 'adjudicated']) == exp_all)
+check('tr3-matrix-api-no-extracted', not [r for r in allmx['rows']
+      if r.get('extraction') == 'extracted'])
+check('tr3-csv-guard', plugin_api._csv_cell('=1+1').startswith(chr(39))
       and plugin_api._csv_cell('9.625') == '9.625')
 
 # ---- Phase 4 multi-client (one codebase, one workspace per client) ----

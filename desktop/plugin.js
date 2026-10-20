@@ -1175,6 +1175,10 @@ function MarketIntelView() {
   const [end, setEnd] = useState('')
   const [fSize, setFSize] = useState('')
   const [fCo, setFCo] = useState('')
+  const [fProv, setFProv] = useState('')
+  const [fStatus, setFStatus] = useState('COUNTED')
+  const [fLoc, setFLoc] = useState('')
+  const [fBasis, setFBasis] = useState('report')
   const [fText, setFText] = useState('')
   const [page, setPage] = useState(0)
   const [selRow, setSelRow] = useState(null)
@@ -1186,13 +1190,22 @@ function MarketIntelView() {
     if (end) qs.push('end=' + encodeURIComponent(end))
     if (fSize) qs.push('size=' + encodeURIComponent(fSize))
     if (fCo) qs.push('company=' + encodeURIComponent(fCo))
+    if (fProv) qs.push('provenance=' + encodeURIComponent(fProv))
+    if (fStatus) qs.push('status=' + encodeURIComponent(fStatus))
+    if (fLoc) qs.push('location=' + encodeURIComponent(fLoc))
+    if (fBasis && fBasis !== 'report') qs.push('date_basis=' + encodeURIComponent(fBasis))
     return qs.join('&')
   }
-  const q = useApi('/matrix' + (selQs() ? '?' + selQs() : ''))
-  useEffect(() => { setPage(0) }, [start, end, fSize, fCo, fText])
+  // date_basis is always declared explicitly so the backend, the
+  // agent seam and both exports filter on the same stated basis —
+  // unknown event dates are never silently counted by report date.
+  const q = useApi('/matrix?date_basis=' + fBasis + (selQs() ? '&' + selQs() : ''))
+  useEffect(() => { setPage(0) }, [start, end, fSize, fCo, fProv, fStatus, fLoc, fBasis, fText])
   const allRows = (q.data && q.data.rows) || []
   const bySize = (q.data && q.data.by_size) || []
   const byCo = (q.data && q.data.by_company) || []
+  const byLoc = (q.data && q.data.by_location) || []
+  const byStatus = (q.data && q.data.by_status) || []
   const byMonth = (q.data && q.data.by_month) || []
   const bySC = (q.data && q.data.by_size_company) || []
   const lineage = (q.data && q.data.lineage) || { with_source_page: 0, total: 0 }
@@ -1201,28 +1214,32 @@ function MarketIntelView() {
   const coverage = (q.data && q.data.coverage) || null
   const pct = n => (n === null || n === undefined || n === '') ? 'n/a' : (Number(n) * 100).toFixed(1) + '%'
   const askOrio = () => {
-    api('/matrix/query' + (selQs() ? '?' + selQs() : '')).then(d => {
+    const qs = 'date_basis=' + fBasis + (selQs() ? '&' + selQs() : '')
+    api('/matrix/query?' + qs).then(d => {
       setOrioSel(d)
       host.notify({ kind: 'info', message: 'ORIO selection: ' + d.total + ' rows.' })
     }).catch(e => host.notify({ kind: 'error', message: 'ORIO query failed: ' + errText(e) }))
   }
   const dl = kind => {
-    // Same-dataset rule: the export URL carries selQs(), the exact
-    // range+filters driving /matrix above. ctx.rest result shape varies
-    // by shell, so coerce Blob / bytes / text; JSON-only shells cannot
-    // carry .xlsx bytes and surface the failure as a notice (endpoint
-    // itself is covered by the Lane C check script).
-    api('/matrix/export.' + kind + (selQs() ? '?' + selQs() : ''), { raw: true }).then(res => {
-      const mime = kind === 'xlsx'
-        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        : 'text/csv'
-      const blob = (typeof Blob !== 'undefined' && res instanceof Blob) ? res
-        : (res && res.byteLength !== undefined) ? new Blob([res], { type: mime })
-        : new Blob([typeof res === 'string' ? res : String(res === null || res === undefined ? '' : res)], { type: mime })
+    // Same-dataset rule: the export URL carries selQs() plus the declared
+    // date_basis — the exact range+filters driving /matrix above.
+    // Downloads go through the JSON envelope (envelope=json): ctx.rest is
+    // JSON-only in some shells, so raw CSV text / .xlsx bytes surfaced as
+    // 'Export failed'. The envelope carries identical bytes as base64.
+    const qs = 'date_basis=' + fBasis + (selQs() ? '&' + selQs() : '') + '&envelope=json'
+    const b64ToBytes = b64 => {
+      const bin = atob(b64)
+      const u8 = new Uint8Array(bin.length)
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i)
+      return u8
+    }
+    api('/matrix/export.' + kind + '?' + qs).then(d => {
+      const u8 = b64ToBytes(d.b64)
+      const blob = new Blob([u8], { type: d.media_type })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'orio_market_intel.' + kind
+      a.download = d.filename || ('orio_market_intel.' + kind)
       document.body.appendChild(a); a.click(); a.remove()
       setTimeout(() => URL.revokeObjectURL(url), 4000)
     }).catch(e => host.notify({ kind: 'error', message: 'Export failed: ' + errText(e) }))
@@ -1230,7 +1247,8 @@ function MarketIntelView() {
   const needle = fText.toUpperCase()
   const rows = useMemo(() => allRows.filter(r =>
     !needle || (textOf(r.date) + ' ' + textOf(r.rig) + ' ' + textOf(r.well) + ' ' +
-      textOf(r.size) + ' ' + textOf(r.company) + ' ' + textOf(r.remarks)).toUpperCase().includes(needle)
+      textOf(r.size) + ' ' + textOf(r.company) + ' ' + textOf(r.location) + ' ' +
+      textOf(r.status) + ' ' + textOf(r.remarks)).toUpperCase().includes(needle)
   ), [allRows, needle])
   const total = (q.data && q.data.total) || 0
   const pages = Math.max(1, Math.ceil(rows.length / per))
@@ -1244,14 +1262,18 @@ function MarketIntelView() {
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Market Intelligence' }),
-        jsx('div', { className: `${ID}-sub`, children: 'Competitor tool size x company, mined from morning reports. Separate track from ORIO lifecycle: market observations, never operational claims. ' + lineage.with_source_page + ' of ' + lineage.total + ' rows carry a source page.' }),
+        jsx('div', { className: `${ID}-sub`, children: 'Competitor tool size x company, mined from morning reports. Separate track from ORIO lifecycle: market observations, never operational claims. June ACCEPTED (Ajeez-ruled 2026-10-20): adjudicated COUNTED rows are findings — company UNPROVEN rows count in size/location only, PENDING/EXCLUDED rows and extracted candidates never fold in. ' + lineage.with_source_page + ' of ' + lineage.total + ' rows carry a source page.' }),
         jsx('div', {
           className: `${ID}-tiles`,
           children: [
             { key: 'rows', label: 'Matrix Rows', value: total },
-            { key: 'months', label: 'Months', value: byMonth.length },
-            { key: 'sizes', label: 'Tool Sizes', value: bySize.length },
-            { key: 'cos', label: 'Companies', value: byCo.length },
+            { key: 'adj', label: 'Adjudicated (ruled)', value: (q.data && q.data.totals_by_provenance && q.data.totals_by_provenance.adjudicated) || 0 },
+            { key: 'extr', label: 'Extracted (candidates)', value: (q.data && q.data.totals_by_provenance && q.data.totals_by_provenance.extracted) || 0 },
+            { key: 'on', label: 'Onshore', value: (byLoc.find(x => x.location === 'onshore') || {}).n || 0 },
+            { key: 'off', label: 'Offshore', value: (byLoc.find(x => x.location === 'offshore') || {}).n || 0 },
+            { key: 'unprov', label: 'UNPROVEN company', value: (q.data && q.data.unproven_company_rows) || 0 },
+            { key: 'own', label: 'INNOVEX own (fenced)', value: (q.data && q.data.innovex_own && q.data.innovex_own.count) || 0 },
+            { key: 'unk', label: 'Unknown event date', value: (q.data && q.data.unknown_event_dates) || 0 },
             { key: 'page', label: 'Page-Linked', value: lineage.with_source_page }
           ].map(c => jsx('div', {
             className: `${ID}-tile`, key: c.key,
@@ -1304,6 +1326,44 @@ function MarketIntelView() {
               options: [{ id: 'all', label: 'All' }].concat(
                 byCo.map(c => ({ id: c.company, label: c.company })))
             }),
+            jsx(SegmentedControl, {
+              value: fProv || 'all',
+              onChange: v => setFProv(v === 'all' ? '' : v),
+              options: [
+                { id: 'all', label: 'All sources' },
+                { id: 'adjudicated', label: 'Adjudicated' },
+                { id: 'workbook', label: 'Benchmark' },
+                { id: 'extracted', label: 'Extracted' }
+              ]
+            }),
+            jsx(SegmentedControl, {
+              value: fStatus || 'all',
+              onChange: v => setFStatus(v === 'all' ? '' : v),
+              options: [
+                { id: 'all', label: 'Any status' },
+                { id: 'COUNTED', label: 'Counted' },
+                { id: 'PENDING_FILE', label: 'Pending file' },
+                { id: 'PENDING_RULING', label: 'Pending ruling' },
+                { id: 'EXCLUDED', label: 'Excluded' }
+              ]
+            }),
+            jsx(SegmentedControl, {
+              value: fLoc || 'all',
+              onChange: v => setFLoc(v === 'all' ? '' : v),
+              options: [
+                { id: 'all', label: 'On+Offshore' },
+                { id: 'onshore', label: 'Onshore' },
+                { id: 'offshore', label: 'Offshore' }
+              ]
+            }),
+            jsx(SegmentedControl, {
+              value: fBasis,
+              onChange: v => setFBasis(v),
+              options: [
+                { id: 'report', label: 'Report-date basis' },
+                { id: 'event', label: 'Event-date basis' }
+              ]
+            }),
             jsx(SearchField, {
               value: fText,
               onChange: v => setFText(searchVal(v)),
@@ -1329,7 +1389,10 @@ function MarketIntelView() {
               children: coverage
                 ? ('Coverage ' + coverage.event_min + '..' + coverage.event_max +
                   ', ' + coverage.distinct_event_days + ' event days' +
-                  (coverage.last_update ? ', updated ' + coverage.last_update : ''))
+                  (coverage.last_update ? ', updated ' + coverage.last_update : '') +
+                  (sel && sel.date_basis_note ? '. ' + sel.date_basis_note : '') +
+                  ((q.data && q.data.unknown_event_dates)
+                    ? (' ' + q.data.unknown_event_dates + ' extracted rows have no supported event date and stay visibly unknown.') : ''))
                 : ''
             }),
             jsx('span', { className: `${ID}-resultcount`, children: '' }),
@@ -1341,10 +1404,20 @@ function MarketIntelView() {
         orioSel ? jsx('div', {
           className: `${ID}-card`,
           children: 'ORIO selection: ' + orioSel.total + ' rows' +
+            (orioSel.totals_by_provenance
+              ? (' (benchmark ' + orioSel.totals_by_provenance.workbook +
+                 ', extracted ' + orioSel.totals_by_provenance.extracted + ')') : '') +
             (orioSel.selection && orioSel.selection.start
               ? (', ' + orioSel.selection.start + '..' + orioSel.selection.end) : ', all dates') +
+            (orioSel.selection && orioSel.selection.date_basis
+              ? (', ' + orioSel.selection.date_basis + '-date basis') : '') +
+            (orioSel.unknown_event_dates
+              ? (', ' + orioSel.unknown_event_dates + ' extracted rows with unknown event date (not counted by report date as known)') : '') +
             (orioSel.selection && orioSel.selection.size ? (', size ' + orioSel.selection.size) : '') +
             (orioSel.selection && orioSel.selection.company ? (', ' + orioSel.selection.company) : '') +
+            (orioSel.selection && orioSel.selection.location && orioSel.selection.location !== 'all' ? (', ' + orioSel.selection.location) : '') +
+            (orioSel.selection && orioSel.selection.status && orioSel.selection.status !== 'all' ? (', ' + orioSel.selection.status) : '') +
+            (orioSel.selection && orioSel.selection.provenance && orioSel.selection.provenance !== 'all' ? (', ' + orioSel.selection.provenance + ' only') : '') +
             '. Same selection reproduces this row set in /matrix and both exports.'
         }) : null,
         jsx('div', {
@@ -1360,7 +1433,7 @@ function MarketIntelView() {
                       className: `${ID}-table`,
                       'aria-label': 'Competitor matrix rows',
                       children: [
-                        jsx(THead, { cols: ['Event (RIH)', 'Report', 'Rig', 'Well', 'Size', 'Company', 'Remarks', 'Evidence'] }),
+                        jsx(THead, { cols: ['Event (RIH)', 'Report', 'Rig', 'Well', 'Size', 'Company', 'Location', 'Status', 'Remarks', 'Evidence'] }),
                         jsx('tbody', {
                           children: pageRows.flatMap((r, i) => {
                             const rid = r.id || (r.date + r.rig + r.well + i)
@@ -1372,17 +1445,21 @@ function MarketIntelView() {
                               style: { cursor: 'pointer' },
                               title: 'Click for evidence drilldown',
                               children: [
-                                jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: textOf(r.event_date || r.date) }) }),
+                                jsx('td', { children: r.event_date ? jsx('span', { className: `${ID}-mono`, children: textOf(r.event_date) }) : jsx('span', { className: `${ID}-dim`, children: 'unknown' }) }),
                                 jsx('td', { children: r.report_date ? jsx('span', { className: `${ID}-mono`, children: textOf(r.report_date) }) : jsx('span', { className: `${ID}-dim`, children: 'workbook' }) }),
                                 jsx('td', { children: jsx('strong', { children: r.rig }) }),
                                 jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
                                 jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: sizeLbl(r.size) }) }),
                                 jsx('td', { children: jsx(Pill, { status: r.company }) }),
+                                jsx('td', { children: r.location ? textOf(r.location) : jsx('span', { className: `${ID}-dim`, children: 'n/a' }) }),
+                                jsx('td', { children: r.status ? jsx('span', { className: `${ID}-pill`, children: textOf(r.status) }) : jsx('span', { className: `${ID}-dim`, children: 'n/a' }) }),
                                 jsx('td', { children: textOf(r.remarks) || jsx('span', { className: `${ID}-dim`, children: 'None' }) }),
                                 jsx('td', {
                                   children: ev.has_page
                                     ? jsx('span', { className: `${ID}-mono`, children: 'p' + r.source_page })
-                                    : jsx('span', { className: `${ID}-dim`, children: 'workbook' })
+                                    : (r.source_page && r.source_page !== 'workbook'
+                                      ? jsx('span', { className: `${ID}-mono`, children: 'p' + r.source_page })
+                                      : jsx('span', { className: `${ID}-dim`, children: 'workbook' }))
                                 })
                               ]
                             })
@@ -1390,15 +1467,19 @@ function MarketIntelView() {
                             return [main, jsx('tr', {
                               key: rid + ':ev',
                               children: jsx('td', {
-                                colSpan: 8,
+                                colSpan: 10,
                                 children: jsx('div', {
                                   className: `${ID}-card`,
                                   children: [
-                                    'Evidence drilldown — event (RIH) date ' + textOf(r.event_date || r.date) +
-                                    ' vs report date ' + textOf(r.report_date || 'n/a (workbook row)') + '. ',
+                                    'Evidence drilldown — event (RIH) date ' + textOf(r.event_date || 'unknown (event date not established)') +
+                                    ' vs report date ' + textOf(r.report_date || (ev.provenance === 'adjudicated' ? 'n/a (ruled row)' : 'n/a (workbook row)')) + '. ',
                                     'Provenance ' + textOf(ev.provenance || r.extraction || 'workbook') +
+                                    (r.status ? (', ruling status ' + textOf(r.status)) : '') +
+                                    (r.location ? (', ' + textOf(r.location)) : '') +
+                                    (r.authority ? (', authority ' + textOf(r.authority)) : '') +
+                                    (r.june_boundary ? ' — June-boundary job (ruled RIH date in July, kept in June matrix per R4).' : '') +
                                     ', source ' + textOf(r.source_file || '?') +
-                                    (ev.has_page ? (', page ' + r.source_page) : ', no page (workbook)') + '.',
+                                    (ev.has_page ? (', page ' + r.source_page) : (r.source_page && r.source_page !== 'workbook' ? (', citation p' + r.source_page) : ', no page (workbook)')) + '.',
                                     (r.source_event_times && r.source_event_times.length)
                                       ? ' Event times ' + r.source_event_times.join('; ') + '.'
                                       : ''

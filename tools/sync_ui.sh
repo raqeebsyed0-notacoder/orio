@@ -21,16 +21,20 @@ cp "$REPO/dashboard/channels.py"      "$PLUGINS/dashboard/channels.py"
 cp "$REPO/dashboard/clients.py"       "$PLUGINS/dashboard/clients.py"
 cp "$REPO/dashboard/manifest.json"    "$PLUGINS/dashboard/manifest.json"
 cp "$REPO/plugin.yaml"                "$PLUGINS/plugin.yaml"
-for f in build_db.py ingest_mr.py ingest_tracker.py ingest_matrix.py jev_consume.py \
+for f in build_db.py ingest_mr.py ingest_tracker.py ingest_matrix.py ingest_adjudicated.py jev_consume.py \
          mr_index.json seed_cases.json company_aliases.json; do
   [ -f "$REPO/data/$f" ] && cp "$REPO/data/$f" "$PLUGINS/data/$f"
 done
+mkdir -p "$PLUGINS/data/ingested/matrix/_retired-v1"
+cp "$REPO/data/ingested/matrix/June2026-adjudicated-v2.json" "$PLUGINS/data/ingested/matrix/" 2>/dev/null || true
+cp "$REPO/data/ingested/matrix/_retired-v1/"* "$PLUGINS/data/ingested/matrix/_retired-v1/" 2>/dev/null || true
 
 echo "== syncing repo tests -> plugins/tests =="
 mkdir -p "$PLUGINS/tests"
-for f in lane_c_check.py run_api.py test_api.py test_jev_repair.py; do
+for f in lane_c_check.py run_api.py test_api.py test_jev_repair.py test_matrix_separation.py test_intelligence_lane7.py test_channels_offline.py; do
   [ -f "$REPO/tests/$f" ] && cp "$REPO/tests/$f" "$PLUGINS/tests/$f"
 done
+[ -d "$REPO/tests/fixtures" ] && mkdir -p "$PLUGINS/tests/fixtures" && cp -r "$REPO/tests/fixtures/." "$PLUGINS/tests/fixtures/" 2>/dev/null || true
 
 echo "== syncing repo -> desktop-plugins mirror =="
 mkdir -p "$MIRROR"

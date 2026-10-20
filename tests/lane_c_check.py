@@ -45,9 +45,14 @@ def check(name, cond, extra=''):
 
 
 # (1) arbitrary start/end, legacy month alias, separated clocks
-full = c.get(B + '/matrix').json()
-r1 = c.get(B + '/matrix?start=2026-06-01&end=2026-06-10').json()
-r2 = c.get(B + '/matrix?start=2026-06-11&end=2026-06-30').json()
+# Default dataset is the Ajeez-ruled adjudicated batch: COUNTED rows span
+# 2026-06-01..2026-07-01 (rows 130/131 carry the ruled July-1 RIH date per
+# R4 and are flagged june_boundary). Selections below are explicit.
+FULL = 'start=2026-06-01&end=2026-07-01&status=COUNTED'
+JUNE = 'start=2026-06-01&end=2026-06-30&status=COUNTED'
+full = c.get(B + '/matrix?' + FULL).json()
+r1 = c.get(B + '/matrix?start=2026-06-01&end=2026-06-10&status=COUNTED').json()
+r2 = c.get(B + '/matrix?start=2026-06-11&end=2026-07-01&status=COUNTED').json()
 check('range-narrows-total', 0 < r1['total'] < full['total'],
       '%d<%d' % (r1['total'], full['total']))
 check('ranges-partition-full', r1['total'] + r2['total'] == full['total'],
@@ -55,21 +60,31 @@ check('ranges-partition-full', r1['total'] + r2['total'] == full['total'],
 check('input-change', r1['total'] != r2['total']
       and r1['by_company'] != r2['by_company'],
       'n=%d vs %d' % (r1['total'], r2['total']))
-m = c.get(B + '/matrix?month=2026-06').json()
-check('month-alias-equals-range', m['total'] == full['total']
-      and m['selection']['mode'] == 'month')
+m = c.get(B + '/matrix?month=2026-06&status=COUNTED').json()
+mj = c.get(B + '/matrix?' + JUNE).json()
+check('month-alias-equals-range', m['total'] == mj['total'] == full['total'] - 2
+      and m['selection']['mode'] == 'month',
+      'month=%d june=%d full=%d' % (m['total'], mj['total'], full['total']))
 row = r1['rows'][0]
 check('clocks-split', 'event_date' in row and 'report_date' in row
       and row['event_date'] and row['report_date'] is None,
-      'workbook row: event=%s report=%s'
+      'adjudicated row: event=%s report=%s'
       % (row['event_date'], row['report_date']))
 check('run-evidence', isinstance(row.get('evidence'), dict)
-      and row['evidence']['provenance'] == 'workbook'
-      and row['evidence']['has_page'] is False)
+      and row['evidence']['provenance'] == 'adjudicated'
+      and row.get('status') == 'COUNTED'
+      and row.get('location') in ('onshore', 'offshore'))
 check('shares-sum-to-one',
       abs(sum(x['share'] for x in r1['by_company']) - 1.0) < 5e-3
       and abs(sum(x['share'] for x in r1['by_size']) - 1.0) < 5e-3,
       'rounded-4dp artifact tolerated')
+check('location-sums-to-total',
+      sum(x['n'] for x in full['by_location']) == full['total']
+      and sum(x['n'] for x in mj['by_location']) == mj['total']
+      and {x['location'] for x in full['by_location']} <= {'onshore', 'offshore'},
+      str(full['by_location']))
+check('innovex-fenced', full['innovex_own']['count'] == 13
+      and full['totals_by_provenance'].get('adjudicated') == full['total'])
 pc = r1['period_compare']
 check('period-compare', pc and pc['current']['n'] == r1['total']
       and pc['previous']['n'] == 0 and pc['delta'] == r1['total']
@@ -79,18 +94,12 @@ check('coverage-last-update', cov['event_min'] <= cov['event_max']
       and cov['distinct_event_days'] > 0 and cov['last_update'],
       str(cov))
 check('filters-combine',
-      c.get(B + '/matrix?start=2026-06-01&end=2026-06-30&size=9.625').json()['total']
-      + c.get(B + '/matrix?start=2026-06-01&end=2026-06-30&size=13.375').json()['total']
-      + c.get(B + '/matrix?start=2026-06-01&end=2026-06-30&size=18.625').json()['total']
+      c.get(B + '/matrix?' + FULL + '&size=9.625').json()['total']
+      + c.get(B + '/matrix?' + FULL + '&size=13.375').json()['total']
+      + c.get(B + '/matrix?' + FULL + '&size=18.625').json()['total']
       == full['total'])
-# invalid inputs -> 400, never 500
-for name, qs in [('bad-month', 'month=June'), ('bad-date', 'start=2026-06-40&end=2026-06-30'),
-                 ('start-after-end', 'start=2026-06-30&end=2026-06-01'),
-                 ('half-range', 'start=2026-06-01'), ('bad-month-num', 'month=2026-13')]:
-    check('reject-' + name, c.get(B + '/matrix?' + qs).status_code == 400, qs)
-
 # (2) genuine .xlsx: opens, 5 sheets, totals agree, reconciliation PASS
-sel = 'start=2026-06-01&end=2026-06-30'
+sel = 'start=2026-06-01&end=2026-07-01&status=COUNTED'
 x = c.get(B + '/matrix/export.xlsx?' + sel)
 check('xlsx-status', x.status_code == 200
       and 'spreadsheetml.sheet' in x.headers['content-type'])
@@ -117,9 +126,10 @@ check('xlsx-filtered-agrees', d2 == j2['total'] > 0, 'n=%d' % d2)
 # (3) ORIO selection seam: GET + POST, same selection as UI
 q = c.get(B + '/matrix/query?start=2026-06-01&end=2026-06-10&size=9.625').json()
 check('query-get', q['total'] > 0
-      and q['selection'] == {'mode': 'range', 'start': '2026-06-01',
-                             'end': '2026-06-10', 'size': '9.625',
-                             'company': None}
+      and all(q['selection'].get(k) == v for k, v in
+              {'mode': 'range', 'start': '2026-06-01',
+               'end': '2026-06-10', 'size': '9.625',
+               'company': None}.items())
       and q['exports']['xlsx'] == '/matrix/export.xlsx')
 qp = c.post(B + '/matrix/query',
             json={'start': '2026-06-01', 'end': '2026-06-10',

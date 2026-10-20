@@ -15,9 +15,14 @@ Target (demo state only; inputs validated and build staged before replacement):
     <client> is `orio-ops` for client #1, Ajeez's pilot)
 
 Usage:  python3 build_db.py [--home PATH] [--db PATH] [--client SLUG] [--quiet]
+  [--matrix-dir DIR] [--include-extracted]
   --client defaults to `orio-ops`. Client slugs match ^[a-z0-9][a-z0-9-]{1,32}$
   (canonical rule lives in dashboard/clients.py; repeated here so this
   script stays runnable standalone).
+  --matrix-dir builds matrix rows from DIR instead of data/ingested/matrix.
+  --include-extracted also loads *-extracted.json (Jev pipeline candidates);
+  without it those rows are quarantined and never published. Pass it only
+  after Ajeez accepts the extracted corpus (June acceptance hold, M7).
 """
 import json
 import os
@@ -106,7 +111,11 @@ CREATE TABLE IF NOT EXISTS tracker_rows(
 CREATE TABLE IF NOT EXISTS matrix_rows(
   id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT, rig TEXT, well TEXT,
   size TEXT, company TEXT, remarks TEXT, source_file TEXT,
-  source_page TEXT, extraction TEXT, evidence_json TEXT);
+  source_page TEXT, extraction TEXT, evidence_json TEXT,
+  location TEXT, status TEXT);
+CREATE TABLE IF NOT EXISTS innovex_own(
+  id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT, rig TEXT, well TEXT,
+  source TEXT, evidence_json TEXT);
 CREATE TABLE IF NOT EXISTS mdd_docs(
   po TEXT PRIMARY KEY, item TEXT, ref TEXT, descr TEXT, qty_ordered INTEGER,
   qty_outstanding INTEGER, shipment TEXT, vendor TEXT, rig TEXT, well TEXT,
@@ -150,8 +159,42 @@ def _load_dir(sub: str) -> list:
     return out
 
 
+_ADJUDICATED_STATUSES = ('COUNTED', 'PENDING_FILE', 'PENDING_RULING',
+                          'EXCLUDED')
+_ADJUDICATED_COMPANIES = ('WFD', 'HAL', 'FET', 'TAM', 'KSV', 'SLB',
+                          'UNPROVEN')
+_ADJUDICATED_LOCATIONS = ('onshore', 'offshore')
+# M5 fence (rules-v2 R1 corollary, orchestrator decision — the extractor at
+# 05_Architecture/mi_extract_v2.py stays frozen): Resp.Co / work-marking
+# codes alone prove no company. A lone code must arrive as UNPROVEN from
+# the ingest layer (data/ingest_adjudicated.py); the build refuses it.
+_NEVER_COMPANY = ('WDV', 'HDV', 'TOD')
+
+
 def _matrix_source_page(r: dict) -> str:
-    extracted = (r.get('extraction') or r.get('provenance')) == 'extracted'
+    provenance = r.get('extraction') or r.get('provenance')
+    if provenance == 'adjudicated':
+        # Ajeez-ruled rows (data/ingest_adjudicated.py): page is the ruled
+        # report citation, kept verbatim as text ('82-83' ranges allowed).
+        # Lineage honesty lives in evidence_json.authority, never in a
+        # coerced integer.
+        if r.get('status') not in _ADJUDICATED_STATUSES:
+            raise ValueError('adjudicated row needs a ruling status')
+        company = r.get('company')
+        if company in _NEVER_COMPANY:
+            raise ValueError(
+                'adjudicated row carries lone Resp.Co code %r: ingest must '
+                'normalise it to UNPROVEN (R1 corollary)' % (company,))
+        if company not in _ADJUDICATED_COMPANIES:
+            raise ValueError('adjudicated row has unknown company %r' % (company,))
+        loc = r.get('location')
+        if loc is not None and loc not in _ADJUDICATED_LOCATIONS:
+            raise ValueError('adjudicated row has unknown location %r' % (loc,))
+        if not r.get('date') or not r.get('rig') or not r.get('well'):
+            raise ValueError('adjudicated row needs date + rig + well')
+        sp = r.get('source_page')
+        return 'workbook' if sp in (None, 'workbook') else str(sp)
+    extracted = provenance == 'extracted'
     if not extracted:
         if r.get('source_page') not in (None, 'workbook') or r.get('source_pages'):
             raise ValueError('workbook cannot carry extracted physical pages')
@@ -200,8 +243,17 @@ def validate_matrix(batches):
                 # Only actual workbook source files receive workbook provenance.
                 if not str(r.get('source_file', batch.get('source_file', ''))).lower().endswith('.xlsx'):
                     raise ValueError('missing explicit provenance; not a workbook')
-            elif provenance not in ('workbook', 'extracted'):
+            elif provenance not in ('workbook', 'extracted', 'adjudicated'):
                 raise ValueError('unknown matrix provenance')
+            if provenance == 'extracted':
+                # M5 fence at the build gate: an extracted owner that is only
+                # a Resp.Co / work-marking code is not a company — refuse it
+                # instead of publishing a misattribution.
+                owner = r.get('owner', r.get('company'))
+                if owner in _NEVER_COMPANY:
+                    raise ValueError(
+                        'extracted row claims lone Resp.Co code %r as company '
+                        '(R1 corollary: UNPROVEN, never published)' % (owner,))
             _matrix_source_page(r)
 
 
@@ -220,14 +272,22 @@ def main(argv: list[str] | None = None) -> None:
     mr_batches = _load_dir('mr')
     tracker_batches = _load_dir('tracker')
     matrix_dir = _flag(src, '--matrix-dir')
+    include_extracted = '--include-extracted' in src
     if matrix_dir is None:
-        # June acceptance hold: old generated extracted JSON is NOT published.
+        # June acceptance hold: unaccepted *-extracted.json rows are NEVER
+        # published by a default build. They load only with the explicit
+        # --include-extracted flag (in-code acceptance check, M7), and only
+        # after Ajeez accepts the extracted corpus. _retired-v1/ never loads
+        # (glob below is top-level only; the v1 workbook is superseded by
+        # the Ajeez-ruled adjudicated batch).
         matrix_batches = [json.loads(p.read_text(encoding='utf-8'))
                           for p in sorted((INGESTED / 'matrix').glob('*.json'))
-                          if not p.name.endswith('-extracted.json')]
+                          if include_extracted or not p.name.endswith('-extracted.json')]
     else:
         matrix_batches = [json.loads(p.read_text(encoding='utf-8'))
-                          for p in sorted(matrix_dir.glob('*.json'))]
+                          for p in sorted(matrix_dir.glob('*.json'))
+                          if include_extracted
+                          or not p.name.endswith('-extracted.json')]
     validate_matrix(matrix_batches)  # before touching the destination
     if any(Path(str(db_path) + suffix).exists() for suffix in ('-wal', '-shm')):
         raise ValueError('destination has SQLite sidecars; stop readers/writers before rebuild')
@@ -320,22 +380,34 @@ def main(argv: list[str] | None = None) -> None:
 
     # ---- competitor matrix rows (market-intelligence track) ----
     # No-invent rule: source_page is an integer report page ONLY for rows a
-    # verified MR extraction proved came from a report. Everything else —
-    # including all workbook-ingested rows — carries the honest marker
-    # 'workbook', never NULL and never a guessed page number.
-    # Two provenance classes share matrix_rows, kept honest end-to-end:
-    #   workbook   — Ajeez's hand-built sheet (June2026.json, 131 rows)
-    #   extracted  — MR rows proven by Jev adjudication (*-extracted.json,
-    #                from data/jev_consume.py; eligibility + span audit there)
+    # verified MR extraction proved came from a report. Workbook-ingested
+    # rows carry the honest marker 'workbook'; Ajeez-ruled rows carry the
+    # ruled report citation verbatim (provenance 'adjudicated', authority in
+    # evidence_json). Never NULL, never a guessed page number.
+    # Three provenance classes share matrix_rows, kept honest end-to-end:
+    #   workbook     — hand-built sheet reference (retired v1 superseded;
+    #                  see data/ingested/matrix/_retired-v1/README.md)
+    #   adjudicated  — Ajeez-ruled June rows (June2026-adjudicated-v2.json:
+    #                  135 rows with ruling status + location; the 13
+    #                  innovex_own jobs travel in the batch but are fenced
+    #                  into innovex_own, never matrix_rows)
+    #   extracted    — MR rows proven by Jev adjudication (*-extracted.json,
+    #                  from data/jev_consume.py; loads ONLY with
+    #                  --include-extracted after Ajeez acceptance)
     # Extracted rows use the adapter's spec keys (owner / provenance /
-    # source_pages); workbook rows use company / extraction / source_page.
+    # source_pages); workbook rows use company / extraction / source_page;
+    # adjudicated rows use company / location / status / source_page.
     n_matrix = 0
+    n_innovex = 0
     for batch in matrix_batches:
         src = batch.get('source_file', '?')
         for r in batch.get('rows', []):
             company = r.get('company')
             if company is None:
                 company = r.get('owner')
+            if company in _NEVER_COMPANY:
+                # M5 fence, last gate: a lone Resp.Co code is UNPROVEN.
+                company = 'UNPROVEN'
             extraction = (r.get('extraction') or r.get('provenance')
                           or 'workbook')
             sp = _matrix_source_page(r)
@@ -348,11 +420,21 @@ def main(argv: list[str] | None = None) -> None:
                     'integer page)' % (src, r))
             con.execute(
                 'INSERT INTO matrix_rows(date,rig,well,size,company,remarks,'
-                'source_file,source_page,extraction,evidence_json) VALUES (?,?,?,?,?,?,?,?,?,?)',
+                'source_file,source_page,extraction,evidence_json,location,'
+                'status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
                 (r.get('date'), r.get('rig'), r.get('well'), r.get('size'),
                  company, r.get('remarks'), r.get('source_file', src),
-                 sp, extraction, json.dumps(r, ensure_ascii=False, allow_nan=False)))
+                 sp, extraction, json.dumps(r, ensure_ascii=False, allow_nan=False),
+                 r.get('location'), r.get('status')))
             n_matrix += 1
+        # innovex_own: out of competitor scope — fenced table, never totals.
+        for o in batch.get('innovex_own', []):
+            con.execute(
+                'INSERT INTO innovex_own(date,rig,well,source,evidence_json)'
+                ' VALUES (?,?,?,?,?)',
+                (o.get('date'), o.get('rig'), o.get('well'), src,
+                 json.dumps(o, ensure_ascii=False, allow_nan=False)))
+            n_innovex += 1
 
     for m in seed['mdd_docs']:
         con.execute('INSERT INTO mdd_docs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
@@ -379,14 +461,52 @@ def main(argv: list[str] | None = None) -> None:
             ' VALUES (?,?,?,?,?,?)',
             (x['date'], x['rig'], x['well'], x['size'], x['company'], x['remarks']))
 
-    n_days = con.execute('SELECT COUNT(*) FROM reports').fetchone()[0]
+    # ---- build receipt (B2): written FROM actual SELECT counts, then
+    # self-checked against the insert counters. A receipt that disagrees
+    # with content fails the build instead of shipping a hand-edit
+    # signature like the stale '355 matrix rows' claim.
+    actual = {
+        'rig_blocks': con.execute('SELECT COUNT(*) FROM rig_blocks').fetchone()[0],
+        'tracker_rows': con.execute('SELECT COUNT(*) FROM tracker_rows').fetchone()[0],
+        'matrix_rows': con.execute('SELECT COUNT(*) FROM matrix_rows').fetchone()[0],
+        'innovex_own': con.execute('SELECT COUNT(*) FROM innovex_own').fetchone()[0],
+        'report_days': con.execute('SELECT COUNT(*) FROM reports').fetchone()[0],
+    }
+    if actual['matrix_rows'] != n_matrix or actual['innovex_own'] != n_innovex:
+        raise SystemExit(
+            'build receipt mismatch: inserted matrix=%d innovex=%d but '
+            'tables hold matrix=%d innovex=%d'
+            % (n_matrix, n_innovex, actual['matrix_rows'], actual['innovex_own']))
+    if actual['tracker_rows'] != n_tracker + len(seed['tracker_rows']):
+        raise SystemExit(
+            'build receipt mismatch: tracker inserted=%d but table holds %d'
+            % (n_tracker, actual['tracker_rows']))
+    mx_status = {r[0]: r[1] for r in con.execute(
+        "SELECT COALESCE(status,'NULL'), COUNT(*) FROM matrix_rows GROUP BY 1")}
+    mx_prov = {r[0]: r[1] for r in con.execute(
+        "SELECT COALESCE(extraction,'NULL'), COUNT(*) FROM matrix_rows GROUP BY 1")}
+    n_days = actual['report_days']
     con.execute('INSERT INTO meta VALUES (?,?)',
                 ('built_from', 'legacy %d blocks; ingested %d blocks; '
-                 '%d tracker rows; %d matrix rows; %d report days'
-                 % (len(legacy['records']), n_ingested, n_tracker,
-                    n_matrix, n_days)))
+                 '%d tracker rows; %d matrix rows%s; %d innovex_own (fenced); '
+                 '%d report days'
+                 % (len(legacy['records']), n_ingested, actual['tracker_rows'],
+                    actual['matrix_rows'],
+                    ' [%s]' % ', '.join('%s=%d' % kv for kv in sorted(mx_prov.items()))
+                    if mx_prov else '',
+                    actual['innovex_own'], n_days)))
+    con.execute('INSERT INTO meta VALUES (?,?)',
+                ('matrix_status_counts',
+                 ', '.join('%s=%d' % kv for kv in sorted(mx_status.items()))))
     con.execute('INSERT INTO meta VALUES (?,?)', ('seed_date', seed_date))
     con.execute('INSERT INTO meta VALUES (?,?)', ('client', client))
+    # Demo/dev label (B2+M6): this database is local demo state. It is NEVER
+    # a production Innovex record and NEVER an Ajeez-facing publication.
+    con.execute('INSERT INTO meta VALUES (?,?)', ('data_tier', 'demo'))
+    con.execute('INSERT INTO meta VALUES (?,?)',
+                ('data_tier_note', 'Local demo/dev database only. No production '
+                 'ORIO record update, no outbound MDD, no external send. '
+                 'Consequential steps require Ajeez approval.'))
     con.commit()
 
     cur = con.cursor()
@@ -399,6 +519,8 @@ def main(argv: list[str] | None = None) -> None:
         print('evidence:', cur.execute('SELECT COUNT(*) FROM evidence').fetchone()[0])
         print('tracker_rows:', cur.execute('SELECT COUNT(*) FROM tracker_rows').fetchone()[0])
         print('matrix_rows:', cur.execute('SELECT COUNT(*) FROM matrix_rows').fetchone()[0])
+        print('matrix_status:', dict(cur.execute("SELECT COALESCE(status,'NULL'), COUNT(*) FROM matrix_rows GROUP BY 1")))
+        print('innovex_own:', cur.execute('SELECT COUNT(*) FROM innovex_own').fetchone()[0])
         print('actions:', cur.execute('SELECT COUNT(*) FROM actions').fetchone()[0])
         print('exceptions:', cur.execute('SELECT COUNT(*) FROM exceptions').fetchone()[0])
         print('history:', cur.execute('SELECT COUNT(*) FROM history').fetchone()[0])

@@ -27,8 +27,14 @@ SIZE_CANON = {'9.625': r'9(?:\.625|[- ]5/8)',
               '13.375': r'13(?:\.375|[- ]3/8)',
               '18.625': r'18(?:\.625|[- ]5/8)'}
 COMPANY_TOKENS = {'WFD': r'WFD|WEATHERFORD',
-                  'HAL': r'HLB|HALL|HAL|HALLIBURTON|HALIBURTON',
-                  'FET': r'FET|DAVIS[- ]LYNCH', 'TAM': r'TAM'}
+                  # Rules-v2 R3: HOWCO on a DV tool string is the Halliburton
+                  # alias (row 25). KSV entry covers SLB/KSV Schlumberger
+                  # markings. WDV/HDV/TOD are DELIBERATELY absent: R1 corollary
+                  # says a lone Resp.Co code proves no company (row 106
+                  # UNPROVEN) — see company_aliases.json never_company.
+                  'HAL': r'HLB|HALL|HAL|HALLIBURTON|HALIBURTON|HOWCO',
+                  'FET': r'FET|DAVIS[- ]LYNCH', 'TAM': r'TAM',
+                  'KSV': r'KSV|SLB|SCHLUMBERGER'}
 DV = re.compile(r'\bDV(?:S)?\b(?:\s+(?:TOOL|ASSY|ASSEMBL|PACKER|PUP|GAS))?', re.I)
 # Surface preparation/installation alone never establishes a downhole run.
 # M/U and INSTALL stay observed-run verbs: the June corpus phrases genuine
@@ -281,7 +287,12 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--adj', type=Path, default=NOTES / 'jev-adj-all.json')
     ap.add_argument('--events', type=Path, default=NOTES / 'dv-june-new.json')
-    ap.add_argument('--workbook', type=Path, default=HERE / 'ingested/matrix/June2026.json')
+    # --workbook is the legacy reference for reference_reconciliation only
+    # (every ref is INSUFFICIENT EVIDENCE by construction). It points at the
+    # retired v1 workbook kept for lineage; the ruled reference is the
+    # adjudicated batch served via /matrix provenance=adjudicated.
+    ap.add_argument('--workbook', type=Path,
+                    default=HERE / 'ingested/matrix/_retired-v1/June2026.json')
     ap.add_argument('--pdf-dir', type=Path, help='Optional exact PDF root; never searches arbitrary paths')
     ap.add_argument('--out', required=True, type=Path)
     ap.add_argument('--ledger', required=True, type=Path)

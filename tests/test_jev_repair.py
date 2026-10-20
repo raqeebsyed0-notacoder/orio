@@ -1,4 +1,12 @@
-"""Offline repair regressions. Synthetic fixtures are NOT June acceptance."""
+"""Offline repair regressions. Synthetic fixtures are NOT June acceptance.
+
+Runs against an isolated scratch dir, never the installed demo DB:
+  <venv python> -m pytest tests/test_jev_repair.py -q
+
+ORIO_REPAIR_OUT (optional): scratch root for repair fixtures. Defaults to
+the system temp dir when unset, so the suite runs with no tribal env
+knowledge; set it explicitly only to pin the location.
+"""
 import copy
 import csv
 import io
@@ -20,7 +28,8 @@ import jev_adjudicate as ja
 import jev_ask as ask
 import build_db
 
-OUT = Path(os.environ['ORIO_REPAIR_OUT']).resolve()
+OUT = Path(os.environ.get('ORIO_REPAIR_OUT') or
+           str(Path(tempfile.gettempdir()) / 'orio-repair-out')).resolve()
 OUT.mkdir(parents=True, exist_ok=True)
 os.environ['HERMES_HOME'] = str(OUT / 'isolated-home')
 TMP = OUT / 'fixtures'
@@ -116,7 +125,7 @@ class Repair(unittest.TestCase):
         # an offline framing/version check only: NO live v4 semantic claim.
         self.assertEqual((ja.SCHEMA_VERSION, ja.STATE_VERSION,
                           ja.POLICY_VERSION, ja.SUPPLIER_SUPPORT),
-                         ('dv-supplier-v4', 'full-spans-v4',
+                         ('dv-supplier-v4', 'full-spans-v5',
                           'june-source-guard-v4', 'explicit-alias-candidate-v4'))
         self.assertEqual((ja.ADOPT_CHOICE_CONF, ja.ADOPT_TOOL_RUN,
                           ja.VERIFY_ABSENT_MAX, ja.NOT_A_RUN_BELOW), (.85, .6, .7, .4))
@@ -359,7 +368,11 @@ class Repair(unittest.TestCase):
         from fastapi.testclient import TestClient
         import plugin_api
         directory = TMP/'matrix'; directory.mkdir(exist_ok=True)
-        shutil.copyfile(PKG/'data/ingested/matrix/June2026.json',directory/'June2026.json')
+        # Ruled reference: the adjudicated v2 batch (v1 workbook retired).
+        # Extracted candidates load ONLY with the --include-extracted
+        # acceptance flag (M7); without it they stay quarantined.
+        shutil.copyfile(PKG/'data/ingested/matrix/June2026-adjudicated-v2.json',
+                        directory/'June2026-adjudicated-v2.json')
         builder_event = dict(event(), source_file='builder-synthetic.pdf')
         row = jc.make_row(result(builder_event), [builder_event])
         import fitz
@@ -374,31 +387,37 @@ class Repair(unittest.TestCase):
         matrix = directory/'June2026-extracted.json'
         matrix.write_text(json.dumps({'rows':[row]}))
         db = OUT/'isolated-home/state/orio-ops/orio_demo.db'
-        args = ['--home',str(OUT/'isolated-home'),'--matrix-dir',str(directory),'--quiet']
+        args = ['--home',str(OUT/'isolated-home'),'--matrix-dir',str(directory),
+                '--include-extracted','--quiet']
         build_db.main(args)
         before = jc.sha256(db)
         matrix.write_text(json.dumps({'rows':[dict(row,source_pages=[True])]}))
         with self.assertRaises(ValueError): build_db.main(args)
         self.assertEqual(jc.sha256(db),before)
         matrix.write_text(json.dumps({'rows':[row]}))
+        # Pin the home: whole-dir runs import every suite (each sets
+        # HERMES_HOME) and TestClient resolves the DB per request, so the
+        # home must be claimed here or queries hit another suite's DB.
+        os.environ['HERMES_HOME'] = str(OUT/'isolated-home')
         app=FastAPI(); app.include_router(plugin_api.router,prefix='/api/plugins/euphoria-orio-operations')
         client=TestClient(app); base='/api/plugins/euphoria-orio-operations'
         response=client.get(base+'/matrix?limit=5000').json()
-        self.assertEqual(response['total'],132)
+        self.assertEqual(response['total'],136)
         ex=next(r for r in response['rows'] if r['extraction']=='extracted')
         self.assertEqual(json.loads(ex['evidence_json'])['sources'],row['sources'])
         self.assertEqual(ex['report_date'],'2026-06-01')
         self.assertIsNone(ex['date_rih'])
         body=list(csv.DictReader(io.StringIO(client.get(base+'/matrix/export.csv').text)))
-        self.assertEqual(len(body),132)
+        self.assertEqual(len(body),136)
         exported=next(r for r in body if r['Provenance']=='extracted')
         self.assertEqual(exported['Date RIH'],'')
         self.assertEqual(exported['Report Date'],'2026-06-01')
         self.assertEqual(json.loads(next(r for r in body if r['Provenance']=='extracted')['Evidence JSON'])['sources'],row['sources'])
-        wb=[r for r in response['rows'] if r['extraction']=='workbook']
-        reference=json.loads((directory/'June2026.json').read_text())['rows']
-        keys=('date','rig','well','size','company')
-        self.assertEqual(sorted(tuple(r[k] for k in keys) for r in wb), sorted(tuple(r[k] for k in keys) for r in reference))
+        adj_rows=[r for r in response['rows'] if r['extraction']=='adjudicated']
+        reference=json.loads((directory/'June2026-adjudicated-v2.json').read_text())['rows']
+        self.assertEqual(len(adj_rows),len(reference))
+        keys=('date','rig','well','size','company','location','status')
+        self.assertEqual(sorted(tuple(r[k] for k in keys) for r in adj_rows), sorted(tuple(r[k] for k in keys) for r in reference))
         for value in ('=1+1','+1','-2','@SUM(A1)','\t=2','\r=2'):
             self.assertTrue(plugin_api._csv_cell(value).startswith("'"))
         for bad in (dict(row, sources=[]), dict(row, source_file='a.pdf;b.pdf'),
@@ -410,6 +429,28 @@ class Repair(unittest.TestCase):
         with sqlite3.connect(db) as con:
             con.execute('ALTER TABLE matrix_rows DROP COLUMN evidence_json')
         self.assertEqual(client.get(base+'/matrix/export.csv').status_code,200)
+
+    def test_extracted_quarantined_without_acceptance_flag(self):
+        # M7: a default build never publishes *-extracted.json rows, even
+        # when the file sits in the matrix dir. Only --include-extracted
+        # (Ajeez acceptance) loads them.
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        import plugin_api
+        directory = TMP/'matrix'
+        directory.mkdir(exist_ok=True)
+        if not (directory/'June2026-adjudicated-v2.json').exists():
+            shutil.copyfile(PKG/'data/ingested/matrix/June2026-adjudicated-v2.json',
+                            directory/'June2026-adjudicated-v2.json')
+        db = OUT/'isolated-home/state/orio-ops/orio_demo.db'
+        build_db.main(['--home',str(OUT/'isolated-home'),'--matrix-dir',str(directory),'--quiet'])
+        os.environ['HERMES_HOME'] = str(OUT/'isolated-home')
+        app=FastAPI(); app.include_router(plugin_api.router,prefix='/api/plugins/euphoria-orio-operations')
+        client=TestClient(app); base='/api/plugins/euphoria-orio-operations'
+        response=client.get(base+'/matrix?limit=5000').json()
+        self.assertEqual(response['total'],135)
+        self.assertEqual(response['totals_by_provenance'].get('extracted'),0)
+        self.assertFalse([r for r in response['rows'] if r.get('extraction')=='extracted'])
 
 
 if __name__=='__main__':

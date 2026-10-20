@@ -21,7 +21,9 @@ stay the same so the desktop UI does not change.
 
 from __future__ import annotations
 
+import base64
 import csv
+import hashlib
 import io
 import json
 import os
@@ -35,7 +37,25 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
+
+
+def _envelope(name: str, media: str, payload: bytes) -> JSONResponse:
+    """JSON-safe file envelope for JSON-only shells.
+
+    The desktop panel reaches the backend through ``ctx.rest``, which
+    cannot carry raw CSV text or .xlsx bytes in every shell — both
+    downloads surfaced as 'Export failed'. The envelope carries the
+    identical bytes as base64 inside JSON; the panel decodes to a Blob.
+    Byte endpoints below are unchanged (direct curl still works).
+    """
+    return JSONResponse({
+        'filename': name,
+        'media_type': media,
+        'size': len(payload),
+        'sha256': hashlib.sha256(payload).hexdigest(),
+        'b64': base64.b64encode(payload).decode('ascii'),
+    })
 
 try:  # tests put dashboard/ on sys.path; the gateway does neither
     from channels import all_statuses, build_email_payload, get_channel
@@ -121,6 +141,57 @@ def _csv_cell(v) -> str:
 router = APIRouter()
 
 
+# ---------------------------------------------------------- company aliases (B4)
+# data/company_aliases.json is the correspondence matrix: report spellings
+# (HOWCO, HLB, DAVIS-LYNCH, ...) resolve to canonical companies, and
+# Resp.Co codes (WDV/HDV/TOD) NEVER resolve to a company (R1 corollary).
+_ALIAS_FILE = Path(__file__).resolve().parent.parent / 'data' / 'company_aliases.json'
+_ALIASES: dict[str, Any] | None = None
+
+
+def _aliases() -> dict[str, Any]:
+    global _ALIASES
+    if _ALIASES is None:
+        try:
+            loaded = json.loads(_ALIAS_FILE.read_text(encoding='utf-8'))
+        except OSError:
+            loaded = {'mapping': {}, 'never_company': {'codes': []}}
+        _ALIASES = loaded
+    return _ALIASES
+
+
+def _resolve_company(raw: str) -> tuple[str, str | None]:
+    """Resolve a ?company= value through the alias map (B4).
+
+    Returns (canonical_code, note). Canonical codes pass through; report
+    aliases resolve (HOWCO->HAL per R3, DAVIS-LYNCH->FET, HLB->HAL, ...);
+    never-company Resp.Co codes (WDV/HDV/TOD) raise 400 — they are work
+    markings, not companies, and must never silently match a company.
+    Unknown codes pass through verbatim and match nothing (empty result,
+    never an invention).
+    """
+    code = (raw or '').strip().upper()
+    if not code:
+        return '', None
+    amap = _aliases()
+    never = {c.upper() for c in (amap.get('never_company') or {}).get('codes', [])}
+    if code in never:
+        raise HTTPException(
+            400, '%s is a Resp.Co / work-marking code, never a company '
+            '(rules-v2 R1 corollary: row 106 WDV, company UNPROVEN)' % code)
+    for canon, entry in (amap.get('mapping') or {}).items():
+        spellings = {canon.upper()} | {a.upper() for a in entry.get('report_aliases', [])}
+        # Hyphen/space-insensitive: DAVIS LYNCH == DAVIS-LYNCH.
+        spellings |= {s.replace('-', ' ').replace('  ', ' ') for s in spellings}
+        spellings |= {s.replace(' ', '-') for s in spellings}
+        if code in spellings:
+            note = None if canon.upper() == code else (
+                '%s resolved to %s (%s)' % (code, canon.upper(),
+                 (entry.get('evidence') or '')[:120]))
+            return canon.upper(), note
+    return code, None
+
+
 # ---------------------------------------------------------- Phase 3 hardening
 # Approvals are attributed, never anonymous. The gateway fronts route auth in
 # production; this module binds the approval actor as follows:
@@ -196,6 +267,9 @@ def meta(request: Request, client: str = Query('')) -> dict[str, Any]:
     return {'demo_date': days[0] if days else m.get('seed_date', '?'),
             'report_dates': days,
             'built_from': m.get('built_from', '?'),
+            'matrix_status_counts': m.get('matrix_status_counts', '?'),
+            'data_tier': m.get('data_tier', '?'),
+            'data_tier_note': m.get('data_tier_note', ''),
             'client': c,
             'banner': 'DEMO - LOCAL DATA ONLY. NO EXTERNAL ACTIONS ENABLED.'}
 
@@ -532,25 +606,186 @@ def _resolve_range(month: str = '', start: str = '',
     return None, None, 'all'
 
 
+_MATRIX_PROVENANCES = ('workbook', 'extracted', 'adjudicated')
+_MATRIX_STATUSES = ('COUNTED', 'PENDING_FILE', 'PENDING_RULING', 'EXCLUDED')
+_MATRIX_LOCATIONS = ('onshore', 'offshore')
+
+
 def _matrix_where(month: str = '', start: str = '', end: str = '',
-                  size: str = '', company: str = '') -> tuple[str, list, dict[str, Any]]:
-    """Shared selection builder for /matrix, both exports and /matrix/query."""
+                  size: str = '', company: str = '',
+                  provenance: str = '', date_basis: str = 'report',
+                  status: str = '', location: str = ''
+                  ) -> tuple[str, list, dict[str, Any]]:
+    """Shared selection builder for /matrix, both exports and /matrix/query.
+
+    ``provenance``: ''/'all' (default, all sources) | 'workbook'
+    (benchmark reference) | 'extracted' (pipeline candidates) |
+    'adjudicated' (Ajeez-ruled June rows). The benchmark is NEVER folded
+    into extraction totals — callers that need per-source counts use
+    ``totals_by_provenance`` on the response.
+
+    ``status``: ''/'all' (default) | COUNTED | PENDING_FILE |
+    PENDING_RULING | EXCLUDED. Ruling status exists only on adjudicated
+    rows; other provenances carry NULL and never match a status filter.
+
+    ``location``: ''/'all' (default) | onshore | offshore. On/offshore
+    exists only on adjudicated rows (B5).
+
+    ``company`` resolves through data/company_aliases.json (HOWCO->HAL,
+    DAVIS-LYNCH->FET, ...); Resp.Co codes (WDV/HDV/TOD) are rejected
+    with 400, never silently matched.
+
+    ``date_basis``: 'report' (default) filters the ``date`` column, which
+    is the workbook RIH date for benchmark rows and the report date for
+    extracted rows; 'event' filters the supported event (RIH) date —
+    workbook ``date`` for benchmark rows, evidence ``date_rih`` for
+    extracted rows. Extracted rows with unknown event dates are EXCLUDED
+    from an event-basis range (never silently counted by report date);
+    their count is reported separately as ``unknown_event_dates``.
+    """
     sel_start, sel_end, mode = _resolve_range(month, start, end)
+    prov = (provenance or '').strip().lower()
+    if prov in ('', 'all'):
+        prov = ''
+    elif prov not in _MATRIX_PROVENANCES:
+        raise HTTPException(
+            400, "provenance must be '', 'all', 'workbook', 'extracted' or 'adjudicated'")
+    st = (status or '').strip().upper()
+    if st in ('', 'ALL'):
+        st = ''
+    elif st not in _MATRIX_STATUSES:
+        raise HTTPException(
+            400, "status must be '', 'all', 'COUNTED', 'PENDING_FILE', "
+            "'PENDING_RULING' or 'EXCLUDED'")
+    loc = (location or '').strip().lower()
+    if loc in ('', 'all'):
+        loc = ''
+    elif loc not in _MATRIX_LOCATIONS:
+        raise HTTPException(
+            400, "location must be '', 'all', 'onshore' or 'offshore'")
+    canon_company, company_note = _resolve_company(company)
+    basis = (date_basis or 'report').strip().lower()
+    if basis not in ('report', 'event'):
+        raise HTTPException(400, "date_basis must be 'report' or 'event'")
     where, args = ' WHERE 1=1', []
     if sel_start:
-        where += ' AND date>=? AND date<=?'
+        if basis == 'event':
+            where += (' AND COALESCE('
+                      "NULLIF(json_extract(evidence_json,'$.date_rih'),''),"
+                      " CASE WHEN extraction='extracted' THEN NULL"
+                      ' ELSE date END)>=? AND COALESCE('
+                      "NULLIF(json_extract(evidence_json,'$.date_rih'),''),"
+                      " CASE WHEN extraction='extracted' THEN NULL"
+                      ' ELSE date END)<=?')
+        else:
+            where += ' AND date>=? AND date<=?'
         args += [sel_start, sel_end]
     if size:
         where += ' AND size=?'
         args.append(size)
-    if company:
+    if canon_company:
         where += ' AND UPPER(company)=?'
-        args.append(company.upper())
+        args.append(canon_company)
+    if prov:
+        where += ' AND extraction=?'
+        args.append(prov)
+    if st:
+        where += ' AND status=?'
+        args.append(st)
+    if loc:
+        where += ' AND location=?'
+        args.append(loc)
     sel: dict[str, Any] = {'mode': mode, 'start': sel_start, 'end': sel_end,
-                           'size': size or None, 'company': company or None}
+                           'size': size or None, 'company': canon_company or None,
+                           'provenance': prov or 'all',
+                           'status': st or 'all', 'location': loc or 'all',
+                           'date_basis': basis}
     if mode == 'month':
         sel['month'] = month.strip()
+    if company_note:
+        sel['company_note'] = company_note
+    if basis == 'report':
+        sel['date_basis_note'] = (
+            'report basis: workbook rows filter on their RIH date; '
+            'extracted rows filter on their report date (event date '
+            'often unknown — see unknown_event_dates)')
+    else:
+        sel['date_basis_note'] = (
+            'event basis: workbook rows filter on their RIH date; '
+            'extracted rows filter on supported date_rih; extracted '
+            'rows with unknown event dates are excluded from the range')
     return where, args, sel
+
+
+def _matrix_nodate_where(size: str = '', company: str = '',
+                         provenance: str = '', status: str = '',
+                         location: str = '') -> tuple[str, list]:
+    """Same source/size/company/status/location filters as _matrix_where,
+    minus any date range — used to count unresolved event dates across
+    the filter set so an event-basis range still discloses the rows it
+    excludes."""
+    where, args = ' WHERE 1=1', []
+    if size:
+        where += ' AND size=?'
+        args.append(size)
+    canon_company, _ = _resolve_company(company)
+    if canon_company:
+        where += ' AND UPPER(company)=?'
+        args.append(canon_company)
+    prov = (provenance or '').strip().lower()
+    if prov and prov != 'all':
+        where += ' AND extraction=?'
+        args.append(prov)
+    st = (status or '').strip().upper()
+    if st and st != 'ALL':
+        where += ' AND status=?'
+        args.append(st)
+    loc = (location or '').strip().lower()
+    if loc and loc != 'all':
+        where += ' AND location=?'
+        args.append(loc)
+    return where, args
+
+
+def _unknown_event_dates(con: sqlite3.Connection, where: str,
+                         args: list) -> int:
+    """Extracted rows in the selection whose event date is not established.
+
+    Callers pass the date-free filter scope (_matrix_nodate_where) so the
+    count also covers rows an event-basis range excludes — unresolved
+    dates are disclosed, never silently dropped from view.
+    """
+    try:
+        return con.execute(
+            'SELECT COUNT(*) c FROM matrix_rows' + where +
+            " AND extraction='extracted' AND (evidence_json IS NULL OR "
+            "json_extract(evidence_json,'$.date_rih') IS NULL OR "
+            "json_extract(evidence_json,'$.date_rih')='')",
+            args).fetchone()['c']
+    except Exception:
+        return 0
+
+
+def _provenance_totals(con: sqlite3.Connection, where: str,
+                       args: list) -> dict[str, int]:
+    """Per-source row counts for the SAME selection (benchmark vs extracted).
+
+    The benchmark total is reported beside — never inside — extraction
+    totals.
+    """
+    out = {'workbook': 0, 'extracted': 0, 'adjudicated': 0}
+    try:
+        for r in con.execute(
+                'SELECT extraction, COUNT(*) c FROM matrix_rows' + where +
+                ' GROUP BY extraction', args):
+            key = r['extraction'] or 'workbook'
+            if key in out:
+                out[key] = r['c']
+            else:
+                out[key] = r['c']
+    except Exception:
+        pass
+    return out
 
 
 def _with_shares(rows: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
@@ -562,7 +797,9 @@ def _enrich_matrix_row(row: dict[str, Any]) -> dict[str, Any]:
     """Split the two clocks the MI skill requires: report date vs event date.
 
     Workbook rows carry the hand-built RIH date in ``date`` and no report
-    clock; extracted rows carry both in their evidence packet. Unsupported
+    clock; extracted rows carry both in their evidence packet; adjudicated
+    rows carry the ruled RIH date in ``date`` plus ruling status, location,
+    authority and the June-boundary flag in evidence. Unsupported
     event dates stay null — never backfilled.
     """
     try:
@@ -578,12 +815,20 @@ def _enrich_matrix_row(row: dict[str, Any]) -> dict[str, Any]:
     row['date_rih'] = event_date  # compat alias
     row['report_date'] = report_date
     row['source_event_times'] = event_times
+    row['location'] = row.get('location') or evidence.get('location')
+    row['status'] = row.get('status') or evidence.get('status')
+    row['authority'] = evidence.get('authority')
+    row['june_boundary'] = bool(evidence.get('june_boundary'))
     row['evidence'] = {
         'provenance': row.get('extraction') or 'workbook',
         'source_file': row.get('source_file'),
         'source_page': row.get('source_page'),
         'has_page': (str(row.get('source_page') or '').isdigit()),
         'event_times': event_times,
+        'status': row['status'],
+        'location': row['location'],
+        'authority': row['authority'],
+        'june_boundary': row['june_boundary'],
     }
     return row
 
@@ -619,9 +864,14 @@ def matrix(request: Request, month: str = Query(''), start: str = Query(''),
            end: str = Query(''), size: str = Query(''),
            company: str = Query(''), limit: int = Query(500, le=5000),
            offset: int = Query(0, ge=0),
+           provenance: str = Query(''),
+           date_basis: str = Query('report'),
+           status: str = Query(''), location: str = Query(''),
            client: str = Query('')) -> dict[str, Any]:
     with _db(_resolve_client(request, client)) as con:
-        where, args, sel = _matrix_where(month, start, end, size, company)
+        where, args, sel = _matrix_where(month, start, end, size, company,
+                                         provenance, date_basis,
+                                         status, location)
         total = con.execute('SELECT COUNT(*) c FROM matrix_rows' + where,
                             args).fetchone()['c']
         page = [_row(r) for r in con.execute(
@@ -631,9 +881,24 @@ def matrix(request: Request, month: str = Query(''), start: str = Query(''),
         sizes = [_row(r) for r in con.execute(
             'SELECT size, COUNT(*) n FROM matrix_rows' + where +
             ' GROUP BY size ORDER BY n DESC', args)]
+        # Company breakdown excludes company='UNPROVEN' rows: an UNPROVEN
+        # company is counted in size/location totals only (row 106,
+        # WDV Resp.Co code, rules-v2 R1 corollary). The excluded count is
+        # disclosed as unproven_company_rows, never silently dropped.
         comps = [_row(r) for r in con.execute(
             'SELECT company, COUNT(*) n FROM matrix_rows' + where +
+            " AND COALESCE(company,'')!='UNPROVEN'" +
             ' GROUP BY company ORDER BY n DESC', args)]
+        unproven_n = con.execute(
+            'SELECT COUNT(*) c FROM matrix_rows' + where +
+            " AND company='UNPROVEN'", args).fetchone()['c']
+        locs = [_row(r) for r in con.execute(
+            'SELECT location, COUNT(*) n FROM matrix_rows' + where +
+            ' GROUP BY location ORDER BY n DESC', args)]
+        stats = [_row(r) for r in con.execute(
+            "SELECT COALESCE(status,'NULL') status, COUNT(*) n"
+            ' FROM matrix_rows' + where +
+            ' GROUP BY 1 ORDER BY n DESC', args)]
         months = [_row(r) for r in con.execute(
             'SELECT substr(date,1,7) month, COUNT(*) n FROM matrix_rows'
             ' GROUP BY month ORDER BY month')]
@@ -652,11 +917,43 @@ def matrix(request: Request, month: str = Query(''), start: str = Query(''),
             " OR extraction IS NULL)",
             args).fetchone()['c']
         coverage = _matrix_coverage(con)
-        compare = _period_compare(con, where, args, sel, size, company)
+        compare = _period_compare(con, where, args, sel, size, company,
+                                  sel.get('provenance', ''),
+                                  sel.get('date_basis', 'report'),
+                                  sel.get('status', ''),
+                                  sel.get('location', ''))
+        prov_totals = _provenance_totals(con, where, args)
+        nd_where, nd_args = _matrix_nodate_where(
+            size, company, sel.get('provenance', ''),
+            sel.get('status', ''), sel.get('location', ''))
+        unknown_ev = _unknown_event_dates(con, nd_where, nd_args)
+        try:
+            innovex_n = con.execute(
+                'SELECT COUNT(*) c FROM innovex_own').fetchone()['c']
+        except Exception:
+            innovex_n = 0
     return {'rows': rows, 'total': total,
             'selection': sel,
+            'totals_by_provenance': prov_totals,
+            'unknown_event_dates': unknown_ev,
+            'unknown_event_dates_scope': ('extracted rows matching '
+                                          'source/size/company filters, '
+                                          'any date — includes rows an '
+                                          'event-basis range excludes'),
             'by_size': _with_shares(sizes, 'size'),
             'by_company': _with_shares(comps, 'company'),
+            'by_location': _with_shares(
+                [{'location': r['location'], 'n': r['n']} for r in locs],
+                'location'),
+            'by_status': stats,
+            'unproven_company_rows': unproven_n,
+            'unproven_company_note': ('rows with company UNPROVEN are '
+                                      'counted in size/location totals only, '
+                                      'never in by_company (rules-v2 R1)'),
+            'innovex_own': {'count': innovex_n,
+                            'note': 'INNOVEX-tool jobs, out of competitor '
+                                    'scope: fenced in innovex_own, never in '
+                                    'matrix totals'},
             'by_month': months,
             'by_size_company': by_size_company,
             'period_compare': compare,
@@ -672,7 +969,9 @@ def matrix(request: Request, month: str = Query(''), start: str = Query(''),
 
 def _period_compare(con: sqlite3.Connection, where: str, args: list,
                     sel: dict[str, Any], size: str,
-                    company: str) -> dict[str, Any] | None:
+                    company: str, provenance: str = '',
+                    date_basis: str = 'report', status: str = '',
+                    location: str = '') -> dict[str, Any] | None:
     """Current selection vs the previous equal-length period, same filters."""
     if not (sel.get('start') and sel.get('end')):
         return None
@@ -683,7 +982,8 @@ def _period_compare(con: sqlite3.Connection, where: str, args: list,
     cur = con.execute('SELECT COUNT(*) c FROM matrix_rows' + where,
                       args).fetchone()['c']
     pwhere, pargs, _ = _matrix_where('', ps.isoformat(), pe.isoformat(),
-                                     size, company)
+                                     size, company, provenance, date_basis,
+                                     status, location)
     prev = con.execute('SELECT COUNT(*) c FROM matrix_rows' + pwhere,
                        pargs).fetchone()['c']
     delta = cur - prev
@@ -694,24 +994,34 @@ def _period_compare(con: sqlite3.Connection, where: str, args: list,
 
 
 @router.get('/matrix/export.csv')
-def matrix_csv(request: Request, month: str = Query(''), start: str = Query(''),
-               end: str = Query(''), size: str = Query(''),
-               company: str = Query(''),
+def matrix_csv(request: Request, month: str = Query(''),
+               start: str = Query(''), end: str = Query(''),
+               size: str = Query(''), company: str = Query(''),
+               provenance: str = Query(''),
+               date_basis: str = Query('report'),
+               status: str = Query(''), location: str = Query(''),
+               envelope: str = Query(''),
                client: str = Query('')) -> Response:
     with _db(_resolve_client(request, client)) as con:
-        where, args, sel = _matrix_where(month, start, end, size, company)
+        where, args, sel = _matrix_where(month, start, end, size, company,
+                                         provenance, date_basis,
+                                         status, location)
         evidence_column = ('evidence_json' if any(r[1] == 'evidence_json'
                            for r in con.execute('PRAGMA table_info(matrix_rows)'))
                            else 'NULL AS evidence_json')
+        cols = {r[1] for r in con.execute('PRAGMA table_info(matrix_rows)')}
+        loc_column = 'location' if 'location' in cols else 'NULL AS location'
+        status_column = 'status' if 'status' in cols else 'NULL AS status'
         rows = con.execute(
             'SELECT date, rig, well, size, company, remarks, source_file,'
-            ' source_page, extraction, ' + evidence_column + ' FROM matrix_rows' + where +
+            ' source_page, extraction, ' + loc_column + ', ' + status_column + ', '
+            + evidence_column + ' FROM matrix_rows' + where +
             ' ORDER BY date, rig, well', args)
         buf = io.StringIO()
         w = csv.writer(buf)
         w.writerow(['Date RIH', 'Report Date', 'Source Event Times', 'Rig', 'Well', 'Size', 'Company',
                     'Special Remarks', 'Source File', 'Evidence JSON', 'Source Page',
-                    'Provenance'])
+                    'Location', 'Status', 'Provenance'])
         for r in rows:
             evidence = json.loads(r['evidence_json'] or '{}')
             is_extracted = r['extraction'] == 'extracted'
@@ -724,10 +1034,18 @@ def matrix_csv(request: Request, month: str = Query(''), start: str = Query(''),
                         _csv_cell(r['source_file']),
                         _csv_cell(r['evidence_json']),
                         _csv_cell(r['source_page']),
+                        _csv_cell(r['location']),
+                        _csv_cell(r['status']),
                         _csv_cell(r['extraction'])])
     tag = ('%s_to_%s' % (sel['start'], sel['end']) if sel.get('start')
            else (sel.get('month') or 'all'))
+    if sel.get('provenance') not in (None, 'all'):
+        tag += '_%s' % sel['provenance']
+    if sel.get('date_basis') not in (None, 'report'):
+        tag += '_%s-basis' % sel['date_basis']
     name = 'orio_market_intel_%s.csv' % tag
+    if envelope == 'json':
+        return _envelope(name, 'text/csv', buf.getvalue().encode('utf-8'))
     return Response(content=buf.getvalue(), media_type='text/csv',
                     headers={'Content-Disposition':
                              'attachment; filename="%s"' % name})
@@ -763,12 +1081,15 @@ def _build_matrix_workbook(rows: list[dict[str, Any]],
                            sizes: list[dict[str, Any]],
                            compare: dict[str, Any] | None,
                            coverage: dict[str, Any],
-                           with_page: int, generated_at: str):
+                           with_page: int, generated_at: str,
+                           prov_totals: dict[str, int] | None = None,
+                           unknown_event_dates: int = 0):
     from openpyxl import Workbook
     from openpyxl.styles import Font
     wb = Workbook()
     bold = Font(bold=True)
     total = len(rows)
+    prov_totals = prov_totals or {}
 
     ws = wb.active
     ws.title = 'Summary'
@@ -776,8 +1097,21 @@ def _build_matrix_workbook(rows: list[dict[str, Any]],
                            if v is not None)
     ws.append(['ORIO Market Intelligence — selection summary'])
     ws.append(['Selection', sel_line or 'all rows'])
+    ws.append(['Date basis', sel.get('date_basis_note') or sel.get('date_basis') or 'report'])
     ws.append(['Generated (UTC)', generated_at])
     ws.append(['Total rows', total])
+    ws.append(['Rows workbook-sourced (benchmark)', prov_totals.get('workbook', '')])
+    ws.append(['Rows extracted (pipeline candidates)', prov_totals.get('extracted', '')])
+    ws.append(['Rows adjudicated (Ajeez-ruled)', prov_totals.get('adjudicated', '')])
+    ws.append(['Extracted rows, event date unknown', unknown_event_dates])
+    if prov_totals.get('adjudicated'):
+        ws.append(['Acceptance', 'June ACCEPTED (Ajeez-ruled 2026-10-20): '
+                   'adjudicated COUNTED rows are findings; company UNPROVEN '
+                   'rows count in size/location only; PENDING/EXCLUDED rows '
+                   'and extracted candidates are never folded in'])
+    else:
+        ws.append(['Acceptance', 'June HOLD — benchmark and extracted rows are '
+                   'reference vs candidates, never summed as accepted findings'])
     ws.append(['Rows with source page', with_page])
     ws.append(['Rows workbook-sourced',
                sum(1 for r in rows if not r['evidence']['has_page'])])
@@ -818,7 +1152,8 @@ def _build_matrix_workbook(rows: list[dict[str, Any]],
 
     wd = wb.create_sheet('Details')
     wd.append(['Event Date (RIH)', 'Report Date', 'Source Event Times', 'Rig',
-               'Well', 'Size', 'Company', 'Special Remarks', 'Source File',
+               'Well', 'Size', 'Company', 'Location', 'Status',
+               'Special Remarks', 'Source File',
                'Source Page', 'Provenance'])
     for r in rows:
         wd.append([_xlsx_text(r.get('event_date')),
@@ -826,6 +1161,7 @@ def _build_matrix_workbook(rows: list[dict[str, Any]],
                    _xlsx_text(';'.join(r.get('source_event_times') or [])),
                    _xlsx_text(r.get('rig')), _xlsx_text(r.get('well')),
                    _xlsx_text(r.get('size')), _xlsx_text(r.get('company')),
+                   _xlsx_text(r.get('location')), _xlsx_text(r.get('status')),
                    _xlsx_text(r.get('remarks')),
                    _xlsx_text(r.get('source_file')),
                    _xlsx_text(r.get('source_page')),
@@ -847,21 +1183,28 @@ def _build_matrix_workbook(rows: list[dict[str, Any]],
                    _xlsx_text(';'.join(r.get('source_event_times') or []))])
 
     wc = wb.create_sheet('Coverage')
-    wc.append(['Event Date', 'Rows in selection'])
+    wc.append(['Event Date (UNKNOWN = event date not established)', 'Rows in selection'])
     days: dict[str, int] = {}
     for r in rows:
-        k = str(r.get('event_date'))
+        k = r.get('event_date') or 'UNKNOWN (event date not established)'
         days[k] = days.get(k, 0) + 1
     for d in sorted(days):
         wc.append([d, days[d]])
 
     wr = wb.create_sheet('Reconciliation')
     wr.append(['Check', 'Expected', 'Actual', 'Status'])
+    _UNKNOWN_LABEL = 'UNKNOWN (event date not established)'
+    _unknown_in_rows = sum(
+        1 for r in rows
+        if (r.get('extraction') or 'workbook') == 'extracted'
+        and not r.get('event_date'))
+    _unproven_in_rows = sum(1 for r in rows if r.get('company') == 'UNPROVEN')
     checks = [
         ('details rows == summary total', total, total, True),
-        ('summary total == sum(company shares base)',
-         total, sum(c['n'] for c in comps),
-         total == sum(c['n'] for c in comps)),
+        ('summary total - UNPROVEN == sum(company shares base) '
+         '(UNPROVEN counts in size/location only, rules-v2 R1)',
+         total - _unproven_in_rows, sum(c['n'] for c in comps),
+         total - _unproven_in_rows == sum(c['n'] for c in comps)),
         ('summary total == sum(size shares base)',
          total, sum(s['n'] for s in sizes),
          total == sum(s['n'] for s in sizes)),
@@ -870,6 +1213,17 @@ def _build_matrix_workbook(rows: list[dict[str, Any]],
          with_page == sum(1 for r in rows if r['evidence']['has_page'])),
         ('coverage sheet rows sum == summary total',
          total, sum(days.values()), total == sum(days.values())),
+        ('sum(provenance totals incl. adjudicated) == summary total '
+         '(separate, never folded)',
+         total, sum((prov_totals or {}).values()),
+         total == sum((prov_totals or {}).values())),
+        ('unknown-event-date rows in Details == UNKNOWN coverage bucket',
+         _unknown_in_rows,
+         days.get(_UNKNOWN_LABEL, 0),
+         _unknown_in_rows == days.get(_UNKNOWN_LABEL, 0)),
+        ('filter-scope unknown-event-date rows >= UNKNOWN in Details',
+         True, unknown_event_dates >= _unknown_in_rows,
+         unknown_event_dates >= _unknown_in_rows),
     ]
     if compare:
         checks.append(('period current n == summary total', total,
@@ -884,33 +1238,55 @@ def _build_matrix_workbook(rows: list[dict[str, Any]],
 def matrix_xlsx(request: Request, month: str = Query(''),
                 start: str = Query(''), end: str = Query(''),
                 size: str = Query(''), company: str = Query(''),
+                provenance: str = Query(''),
+                date_basis: str = Query('report'),
+                status: str = Query(''), location: str = Query(''),
+                envelope: str = Query(''),
                 client: str = Query('')) -> Response:
     c = _resolve_client(request, client)
     with _db(c) as con:
-        where, args, sel = _matrix_where(month, start, end, size, company)
+        where, args, sel = _matrix_where(month, start, end, size, company,
+                                         provenance, date_basis,
+                                         status, location)
         rows = _matrix_selection_rows(con, where, args)
         comps = _with_shares(
             [_row(r) for r in con.execute(
                 'SELECT company, COUNT(*) n FROM matrix_rows' + where +
+                " AND COALESCE(company,'')!='UNPROVEN'" +
                 ' GROUP BY company ORDER BY n DESC', args)], 'company')
         sizes = _with_shares(
             [_row(r) for r in con.execute(
                 'SELECT size, COUNT(*) n FROM matrix_rows' + where +
                 ' GROUP BY size ORDER BY n DESC', args)], 'size')
         with_page = sum(1 for r in rows if r['evidence']['has_page'])
-        compare = _period_compare(con, where, args, sel, size, company)
+        compare = _period_compare(con, where, args, sel, size, company,
+                                  sel.get('provenance', ''),
+                                  sel.get('date_basis', 'report'),
+                                  sel.get('status', ''),
+                                  sel.get('location', ''))
         coverage = _matrix_coverage(con)
+        prov_totals = _provenance_totals(con, where, args)
+        nd_where, nd_args = _matrix_nodate_where(
+            size, company, sel.get('provenance', ''))
+        unknown_ev = _unknown_event_dates(con, nd_where, nd_args)
     wb = _build_matrix_workbook(
         rows, sel, comps, sizes, compare, coverage, with_page,
-        time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
+        time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        prov_totals, unknown_ev)
     buf = io.BytesIO()
     wb.save(buf)
     tag = ('%s_to_%s' % (sel['start'], sel['end']) if sel.get('start')
            else (sel.get('month') or 'all'))
+    if sel.get('provenance') not in (None, 'all'):
+        tag += '_%s' % sel['provenance']
+    if sel.get('date_basis') not in (None, 'report'):
+        tag += '_%s-basis' % sel['date_basis']
+    xname = 'orio_market_intel_%s.xlsx' % tag
+    if envelope == 'json':
+        return _envelope(xname, _XLSX_MEDIA, buf.getvalue())
     return Response(content=buf.getvalue(), media_type=_XLSX_MEDIA,
                     headers={'Content-Disposition':
-                             'attachment; filename="orio_market_intel_%s.xlsx"'
-                             % tag})
+                             'attachment; filename="%s"' % xname})
 
 
 def _selection_payload(con: sqlite3.Connection, where: str, args: list,
@@ -921,6 +1297,7 @@ def _selection_payload(con: sqlite3.Connection, where: str, args: list,
     comps = _with_shares(
         [_row(r) for r in con.execute(
             'SELECT company, COUNT(*) n FROM matrix_rows' + where +
+            " AND COALESCE(company,'')!='UNPROVEN'" +
             ' GROUP BY company ORDER BY n DESC', args)], 'company')
     sizes = _with_shares(
         [_row(r) for r in con.execute(
@@ -929,14 +1306,27 @@ def _selection_payload(con: sqlite3.Connection, where: str, args: list,
     return {
         'selection': sel,
         'total': total,
+        'totals_by_provenance': _provenance_totals(con, where, args),
+        'unknown_event_dates': _unknown_event_dates(
+            con, *_matrix_nodate_where(size, company,
+                                       sel.get('provenance', ''),
+                                       sel.get('status', ''),
+                                       sel.get('location', ''))),
+        'unknown_event_dates_scope': ('extracted rows matching '
+                                      'source/size/company filters, any date'),
         'shares': {'by_company': comps, 'by_size': sizes},
         'period_compare': _period_compare(con, where, args, sel, size,
-                                          company),
+                                          company,
+                                          sel.get('provenance', ''),
+                                          sel.get('date_basis', 'report'),
+                                          sel.get('status', ''),
+                                          sel.get('location', '')),
         'coverage': _matrix_coverage(con),
         'exports': {
             'csv': '/matrix/export.csv',
             'xlsx': '/matrix/export.xlsx',
-            'note': 'Append the same selection params (?start=&end=&size=&company=).',
+            'note': ('Append the same selection params '
+                     '(?start=&end=&size=&company=&provenance=&date_basis=).'),
         },
         'track': 'market intelligence (separate from ORIO lifecycle)',
         'note': ('ORIO MI selection seam: pass this selection to the matrix '
@@ -948,13 +1338,18 @@ def _selection_payload(con: sqlite3.Connection, where: str, args: list,
 def matrix_query_get(request: Request, month: str = Query(''),
                      start: str = Query(''), end: str = Query(''),
                      size: str = Query(''), company: str = Query(''),
+                     provenance: str = Query(''),
+                     date_basis: str = Query('report'),
+                     status: str = Query(''), location: str = Query(''),
                      client: str = Query('')) -> dict[str, Any]:
     """ORIO extension seam (GET): the UI's Ask-ORIO button and any agent
     call this with the current range+filters; the reply is the reproducible
     selection spec ORIO queries against."""
     c = _resolve_client(request, client)
     with _db(c) as con:
-        where, args, sel = _matrix_where(month, start, end, size, company)
+        where, args, sel = _matrix_where(month, start, end, size, company,
+                                         provenance, date_basis,
+                                         status, location)
         return _selection_payload(con, where, args, sel, size, company)
 
 
@@ -962,14 +1357,17 @@ def matrix_query_get(request: Request, month: str = Query(''),
 def matrix_query_post(body: dict[str, Any], request: Request,
                       client: str = Query('')) -> dict[str, Any]:
     """ORIO extension seam (POST): JSON {month?, start?, end?, size?,
-    company?} for skill/agent callers that POST a selection."""
+    company?, provenance?, date_basis?} for skill/agent callers that POST
+    a selection."""
     body = body or {}
     c = _resolve_client(request, client)
     with _db(c) as con:
         where, args, sel = _matrix_where(
             body.get('month', ''), body.get('start', ''),
             body.get('end', ''), body.get('size', ''),
-            body.get('company', ''))
+            body.get('company', ''), body.get('provenance', ''),
+            body.get('date_basis', 'report'), body.get('status', ''),
+            body.get('location', ''))
         return _selection_payload(con, where, args, sel,
                                   body.get('size', ''),
                                   body.get('company', ''))
@@ -1122,6 +1520,71 @@ def client_profile(slug: str) -> dict[str, Any]:
 # ---------------------------------------------------------------- channels
 # Phase 2 seams: every channel reports BLOCKED with its reason. The outbox
 # holds prepared payloads as local data; there is no send path to call.
+
+# ---------------------------------------------------------------- intelligence
+# LANE 7: read-only range views over VERIFIED June registers (features 1-4).
+# Pure functions, no sockets, no writes. Frozen registers are never edited.
+
+_STALE_LANE7_NOTE = (
+    'STALE vs Ajeez 2026-10-20 rulings: these views read the pre-ruling '
+    'registers (dv-june-adjudicated.json day-events + lane4-reconciliation '
+    'round2 131-row reconciliation). Ruled June truth lives in '
+    'phase7-ajeez-rulings/adjudicated-rows-v2.json (123 COUNTED) and the '
+    '/matrix provenance=adjudicated rows. Lane-7 re-pointing is deferred; '
+    'do not cite these views as ruled findings.')
+
+
+def _stale_lane7(view: dict[str, Any]) -> dict[str, Any]:
+    """Mark a lane-7 view visibly stale (M4): additive keys only, so the
+    frozen-register checks keep passing while no caller can mistake the
+    view for ruled truth."""
+    view = dict(view)
+    view['stale'] = True
+    view['stale_note'] = _STALE_LANE7_NOTE
+    view['superseded_by'] = ('adjudicated-rows-v2.json + '
+                             '/matrix?provenance=adjudicated')
+    return view
+
+try:
+    from intelligence import build_bundle
+except Exception:  # pragma: no cover - gateway loads dashboard standalone
+    import sys as _sys2
+
+    _here2 = str(Path(__file__).resolve().parent)
+    if _here2 not in _sys2.path:
+        _sys2.path.insert(0, _here2)
+    from intelligence import build_bundle  # type: ignore[no-redef]
+
+
+@router.get('/intelligence/upcoming')
+def intelligence_upcoming(as_of: str = Query('2026-06-30')) -> dict[str, Any]:
+    """Feature 1: explicit upcoming-job plans, historical as-of-date view."""
+    return _stale_lane7(build_bundle(as_of=as_of)['upcoming'])
+
+
+@router.get('/intelligence/suppliers/first-seen')
+def intelligence_first_seen() -> dict[str, Any]:
+    """Feature 2: first supplier appearances + repeat use, coverage shown."""
+    return _stale_lane7(build_bundle()['suppliers'])
+
+
+@router.get('/intelligence/tool-problems')
+def intelligence_problems() -> dict[str, Any]:
+    """Feature 3: explicitly reported tool problems + resolution state."""
+    return _stale_lane7(build_bundle()['problems'])
+
+
+@router.get('/intelligence/corrections')
+def intelligence_corrections() -> dict[str, Any]:
+    """Feature 4: reviewer correction flow with originals + effort metrics."""
+    return _stale_lane7(build_bundle()['corrections'])
+
+
+@router.get('/intelligence/questions')
+def intelligence_questions() -> dict[str, Any]:
+    """Banked ORIO questions with evidence links for the four views."""
+    return build_bundle()['questions']
+
 
 @router.get('/channels/status')
 def channels_status() -> dict[str, Any]:
