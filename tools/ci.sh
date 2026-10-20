@@ -27,6 +27,9 @@ echo "== pytest: test_matrix_separation =="
 echo "== pytest: test_empty_states (F1/F2) =="
 "$PY" -m pytest "$REPO/tests/test_empty_states.py" -q
 
+echo "== pytest: test_day_picker (FIX6) =="
+"$PY" -m pytest "$REPO/tests/test_day_picker.py" -q
+
 echo "== pytest: test_jev_repair =="
 "$PY" -m pytest "$REPO/tests/test_jev_repair.py" -q
 
@@ -72,5 +75,8 @@ if [ -f "$PLUGINS/data/ingested/matrix/June2026.json" ]; then
 fi
 if [ "$drift" != "0" ]; then echo "backend out of sync — run bash tools/sync_ui.sh"; exit 1; fi
 echo "BACKEND IN SYNC"
+
+echo "== served-home DB drift gate (fix5): served shells must not run stale data =="
+"$PY" "$REPO/tools/check_served_dbs.py"
 
 echo "CI clean."

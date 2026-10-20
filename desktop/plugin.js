@@ -39,7 +39,7 @@ import {
   useValue
 } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const ID = 'euphoria-orio-operations'
 const PAGE = '/orio-operations'
@@ -100,7 +100,22 @@ function ensureStyles() {
   .${ID}-num { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
   .${ID}-lbl { font-size:11px; color:var(--ui-text-tertiary); }
   .${ID}-toolbar { display:flex; gap:.5rem; margin-bottom:.6rem; align-items:center; flex-wrap:wrap; }
-  .${ID}-daypick { display:inline-flex; align-items:center; }
+  .${ID}-daypick { display:inline-flex; align-items:center; gap:.35rem; position:relative; }
+  /* FIX6 (t_31edfb22): themed Report-day dropdown. The native <select> popup
+   * renders in OS chrome (white bg, pale-grey options) — illegible in the
+   * dark shell and invisible to DOM screenshots. Trigger + popover listbox
+   * below are pure theme-var DOM, so the OPEN list inherits the shell theme
+   * (foreground text on elevated surface, same pair as the nav buttons). */
+  .${ID}-daytrig { display:inline-flex; align-items:center; gap:.4rem; font-family:inherit; font-size:12px; color:var(--foreground); background:var(--ui-bg-elevated); border:1px solid var(--ui-stroke-secondary); border-radius:8px; padding:.3rem .55rem; cursor:pointer; max-width:230px; }
+  .${ID}-daytrig:hover { background:var(--chrome-action-hover); }
+  .${ID}-daytrig:focus-visible { outline:2px solid var(--ui-accent); outline-offset:1px; }
+  .${ID}-daytrig-lbl { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .${ID}-daytrig-caret { opacity:.65; font-size:10px; flex-shrink:0; }
+  .${ID}-daypop { position:absolute; top:calc(100% + 4px); left:0; z-index:50; min-width:210px; max-width:270px; max-height:280px; overflow-y:auto; background:var(--ui-bg-elevated); color:var(--foreground); border:1px solid var(--ui-stroke-secondary); border-radius:8px; padding:.25rem; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  .${ID}-dayopt { display:flex; align-items:center; gap:.45rem; width:100%; text-align:left; background:transparent; border:0; border-radius:6px; padding:.35rem .5rem; cursor:pointer; color:var(--foreground); font-size:12px; font-family:inherit; }
+  .${ID}-dayopt:hover, .${ID}-dayopt[data-active="1"] { background:var(--chrome-action-hover); }
+  .${ID}-dayopt[data-sel="1"] { font-weight:700; color:var(--ui-accent); }
+  .${ID}-daycheck { width:1em; flex-shrink:0; }
   .${ID}-dim { opacity:.55; font-size:.78rem; }
   .${ID}-raildesc { font-size:.78rem; line-height:1.45; opacity:.75; }
   .${ID}-resultcount { font-size:12px; color:var(--ui-text-tertiary); margin-left:auto; white-space:nowrap; }
@@ -2125,6 +2140,102 @@ function JobDialog({ jobId, rigWell, onClose }) {
 }
 
 /* --------------------------------- App --------------------------------- */
+/* FIX6 (t_31edfb22): Report-day picker as themed in-DOM dropdown.
+ * Same behavior as the native <select> it replaces (Latest = '' server
+ * default; value validated vs /meta upstream; $day + storage write on
+ * pick; stale-day reset untouched in OrioPage) but the open list renders
+ * in the shell theme, so it stays readable in dark mode and is
+ * screenshot-verifiable — native popups render in OS chrome and never
+ * appear in DOM captures. Keyboard (honest scope): the trigger is a real
+ * <button> (Tab-focusable; Enter/Space toggles); while open, ArrowUp/Down
+ * move the highlight, Enter commits, Escape closes, Tab closes; focus
+ * stays on the trigger throughout (no roving tabindex into the list). */
+function DayPicker({ days, latest, value, onPick }) {
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  const rootRef = useRef(null)
+  const opts = useMemo(() => [{ v: '', label: 'Latest (' + latest + ')' }]
+    .concat(days.map(d => ({ v: d, label: d }))), [days, latest])
+  const curLabel = value ? value : 'Latest (' + latest + ')'
+  useEffect(() => {
+    if (!open) return
+    const idx = Math.max(0, opts.findIndex(o => o.v === value))
+    setActive(idx)
+    try {
+      const el = rootRef.current && rootRef.current.querySelector('[data-sel="1"]')
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' })
+    } catch (e) { /* scroll hint only */ }
+  }, [open])
+  useEffect(() => {
+    if (!open) return
+    const onDown = e => {
+      if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); return }
+      const inRoot = rootRef.current && e.target && rootRef.current.contains(e.target)
+      if (!inRoot) { setOpen(false); return }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        setActive(a => Math.min(opts.length - 1, Math.max(0, a + (e.key === 'ArrowDown' ? 1 : -1))))
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const o = opts[active]
+        if (o) { setOpen(false); onPick(o.v) }
+      }
+    }
+    const onMouse = e => {
+      if (rootRef.current && e.target && !rootRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onMouse)
+    document.addEventListener('keydown', onDown, true)
+    return () => {
+      document.removeEventListener('mousedown', onMouse)
+      document.removeEventListener('keydown', onDown, true)
+    }
+  }, [open, active, opts, onPick])
+  return jsxs('div', {
+    ref: rootRef,
+    children: [
+      jsxs('button', {
+        type: 'button',
+        className: `${ID}-daytrig`,
+        'aria-haspopup': 'listbox',
+        'aria-expanded': open ? 'true' : 'false',
+        'aria-label': 'Report day',
+        title: 'Report day — drives the Today heading and the Rigs & Wells index',
+        onClick: () => setOpen(o => !o),
+        onKeyDown: e => {
+          if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); setOpen(true) }
+        },
+        children: [
+          jsx('span', { className: `${ID}-daytrig-lbl`, children: curLabel }, 'lbl'),
+          jsx('span', { className: `${ID}-daytrig-caret`, 'aria-hidden': 'true', children: open ? '▴' : '▾' }, 'caret')
+        ]
+      }, 'trig'),
+      open ? jsxs('div', {
+        className: `${ID}-daypop`,
+        role: 'listbox',
+        'aria-label': 'Report day options',
+        children: opts.map((o, i) => {
+          const sel = o.v === value
+          return jsxs('button', {
+            type: 'button',
+            className: `${ID}-dayopt`,
+            role: 'option',
+            'aria-selected': sel ? 'true' : 'false',
+            'data-sel': sel ? '1' : '0',
+            'data-active': i === active ? '1' : '0',
+            onMouseEnter: () => setActive(i),
+            onClick: () => { setOpen(false); onPick(o.v) },
+            children: [
+              jsx('span', { className: `${ID}-daycheck`, 'aria-hidden': 'true', children: sel ? '✓' : '' }, 'chk'),
+              jsx('span', { children: o.label }, 'txt')
+            ]
+          }, o.v === '' ? 'latest' : o.v)
+        })
+      }, 'pop') : null
+    ]
+  }, 'daypicker')
+}
+
 function OrioPage() {
   const view = useValue($view)
   const qc = useQueryClient()
@@ -2178,18 +2289,18 @@ function OrioPage() {
         children: [
           jsx('span', { className: `${ID}-title`, children: 'ORIO Operations' }),
           jsx('span', { className: `${ID}-demobadge`, children: 'DEMO, LOCAL DATA ONLY' }),
-          days.length ? jsx('label', {
+          days.length ? jsxs('div', {
             className: `${ID}-daypick`,
-            children: ['Report day ', jsx('select', {
-              value: dayParam,
-              'aria-label': 'Report day',
-              title: 'Report day — drives the Today heading and the Rigs & Wells index',
-              onChange: e => { const v = e.target.value; $day.set(v); storageSet('day', v) },
-              style: { fontFamily: 'inherit', fontSize: '12px', maxWidth: '220px' },
-              children: [jsx('option', { value: '', children: 'Latest (' + latest + ')' })]
-                .concat(days.map(d => jsx('option', { key: d, value: d, children: d })))
-            })]
-          }) : null,
+            children: [
+              jsx('span', { className: `${ID}-dim`, children: 'Report day' }, 'lbl'),
+              jsx(DayPicker, {
+                days,
+                latest,
+                value: dayParam,
+                onPick: v => { $day.set(v); storageSet('day', v) }
+              }, 'pick')
+            ]
+          }, 'daypick') : null,
           jsx('span', { className: `${ID}-sub`, style: { margin: 0 }, children: 'No external actions enabled.' }),
           jsx('span', { style: { flex: 1 } }),
           jsx(Button, { size: 'xs', variant: 'ghost', onClick: howItWorks, children: 'How this works' }),
