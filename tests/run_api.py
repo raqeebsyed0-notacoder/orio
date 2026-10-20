@@ -266,6 +266,40 @@ check('matrix-june-boundary',
       sum(1 for r in c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&limit=5000').json()['rows']
           if r.get('june_boundary')) == exp_boundary,
       'boundary=%d' % exp_boundary)
+# ---- Gate2-fix: single-bound ranges are open-ended, never a 400 ----
+sb1 = c.get(B + '/matrix?start=2026-06-15')
+check('matrix-single-start-open',
+      sb1.status_code == 200 and sb1.json()['selection']['mode'] == 'range-open'
+      and sb1.json()['selection']['start'] == '2026-06-15'
+      and sb1.json()['selection']['end'] is None
+      and sb1.json()['period_compare'] is None, str(sb1.status_code))
+sb2 = c.get(B + '/matrix?end=2026-06-15')
+check('matrix-single-end-open',
+      sb2.status_code == 200 and sb2.json()['selection']['mode'] == 'range-open'
+      and sb2.json()['selection']['end'] == '2026-06-15'
+      and sb2.json()['selection']['start'] is None, str(sb2.status_code))
+sb3 = c.get(B + '/matrix?start=2026-06-15&end=2026-07-01')
+sb4 = c.get(B + '/matrix?start=2026-06-01&end=2026-06-15')
+check('matrix-open-superset-closed',
+      sb3.status_code == 200 and sb4.status_code == 200
+      and sb1.json()['total'] >= sb3.json()['total']
+      and sb2.json()['total'] >= sb4.json()['total'],
+      'open-start=%d closed-after=%d open-end=%d closed-before=%d'
+      % (sb1.json()['total'], sb3.json()['total'],
+         sb2.json()['total'], sb4.json()['total']))
+sbev = c.get(B + '/matrix?date_basis=event&start=2026-06-15')
+check('matrix-single-start-event-open',
+      sbev.status_code == 200
+      and sbev.json()['selection']['mode'] == 'range-open', str(sbev.status_code))
+check('matrix-reversed-still-400',
+      c.get(B + '/matrix?start=2026-07-01&end=2026-06-01').status_code == 400)
+check('matrix-bad-date-still-400',
+      c.get(B + '/matrix?start=2026-13-40').status_code == 400)
+sbx = c.get(B + '/matrix/export.csv?start=2026-06-15&envelope=json')
+check('matrix-export-open-name',
+      sbx.status_code == 200
+      and sbx.json()['filename'] == 'orio_market_intel_2026-06-15_to_open.csv',
+      str(sbx.json().get('filename') if sbx.status_code == 200 else sbx.status_code))
 # M4: lane-7 currency — suppliers + corrections serve the v2 ruled data
 # with no stale flag; upcoming + tool-problems still read the pre-v2
 # day-event registers (v2 rows carry no report context text) and stay

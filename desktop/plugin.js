@@ -61,6 +61,14 @@ const api = (path, opts) => {
 const QK = (...parts) => [ID, ...parts]
 const errText = e => String((e && (e.message || e.data || e)) || e)
 const textOf = v => String(v === null || v === undefined ? '' : v)
+/* ISO report day -> 'D Month YYYY' for headings. No literal dates anywhere. */
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December']
+const fmtDay = iso => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '')
+  if (!m) return iso || '?'
+  return Number(m[3]) + ' ' + MONTHS[Number(m[2]) - 1] + ' ' + m[1]
+}
 
 /* Styling: one injected stylesheet, theme vars only, 8px radius lock,
  * single accent (critical tile + primary approve), mono numerals. */
@@ -103,6 +111,50 @@ function ensureStyles() {
   .${ID}-table tbody tr:last-child td { border-bottom:0; }
   .${ID}-table tbody tr:hover td { background:var(--chrome-action-hover); }
   .${ID}-table tbody tr[data-hot="1"] td:first-child { box-shadow:inset 2px 0 0 var(--ui-accent); }
+  .${ID}-celltext { max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .${ID}-cellid { white-space:nowrap; }
+  /* R3: MI rail primitives (pre-existing classes, previously unstyled). */
+  .${ID}-railcard { border:1px solid var(--ui-stroke-secondary); border-radius:8px; padding:.7rem .8rem; background:var(--ui-bg-card); min-width:0; }
+  .${ID}-railtitle { font-size:12px; font-weight:700; margin-bottom:.5rem; }
+  .${ID}-bars { display:flex; flex-direction:column; gap:.35rem; }
+  .${ID}-barrow { display:flex; align-items:center; gap:.5rem; width:100%; background:transparent; border:0; border-radius:6px; padding:.15rem .2rem; color:var(--ui-text-secondary); cursor:pointer; font-size:12px; font-family:inherit; text-align:left; }
+  .${ID}-barrow:hover { background:var(--chrome-action-hover); color:var(--foreground); }
+  .${ID}-barrow[data-static="1"] { cursor:default; }
+  .${ID}-barrow[data-static="1"]:hover { background:transparent; color:var(--ui-text-secondary); }
+  .${ID}-barrow .${ID}-bar { flex:1; min-width:24px; margin-top:0; }
+  .${ID}-barname { flex-shrink:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .${ID}-barnum { margin-left:auto; flex-shrink:0; font-variant-numeric:tabular-nums; font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:12px; }
+  /* R3: MI summary composition (lead element). Same primitives/vars only. */
+  .${ID}-sumgrid { display:flex; gap:.9rem; align-items:stretch; flex-wrap:wrap; }
+  .${ID}-sumlead { display:flex; flex-direction:column; justify-content:center; min-width:150px; padding-right:.9rem; border-right:1px solid var(--ui-stroke-secondary); }
+  .${ID}-sumtotal { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .${ID}-sumleader { font-size:12px; color:var(--ui-text-secondary); margin-top:.2rem; }
+  .${ID}-sumleader strong { color:var(--ui-accent); font-size:15px; font-variant-numeric:tabular-nums; }
+  .${ID}-sumcol { display:flex; flex-direction:column; gap:.45rem; flex:1; min-width:220px; justify-content:center; }
+  .${ID}-sumlbl { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ui-text-tertiary); }
+  .${ID}-sizebar { display:flex; height:10px; border-radius:5px; overflow:hidden; background:var(--chrome-action-hover); }
+  .${ID}-sizebar > span { display:block; height:100%; background:var(--ui-accent); }
+  .${ID}-sizeleg { display:flex; gap:.7rem; flex-wrap:wrap; font-size:12px; color:var(--ui-text-secondary); }
+  .${ID}-sizeleg > span { display:inline-flex; align-items:center; gap:.3rem; }
+  .${ID}-locsplit { display:flex; gap:.6rem; align-items:baseline; flex-wrap:wrap; font-size:12px; color:var(--ui-text-secondary); }
+  .${ID}-locsplit strong { font-size:16px; font-variant-numeric:tabular-nums; color:var(--foreground); }
+  /* R4: provenance inline strip (muted, smaller numerals — no equal-weight KPI cards). */
+  .${ID}-provstrip { display:flex; gap:.5rem; align-items:baseline; flex-wrap:wrap; font-size:12px; color:var(--ui-text-secondary); border:1px solid var(--ui-stroke-secondary); border-radius:8px; padding:.45rem .7rem; margin-bottom:.8rem; background:var(--ui-bg-card); }
+  .${ID}-provstrip strong { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--foreground); }
+  /* R4: left-column WHERE split bar reuses the stacked sizebar + legend primitives. */
+  .${ID}-sumlead .${ID}-sizebar { margin-top:.3rem; }
+  .${ID}-statuschips { display:flex; gap:.35rem; flex-wrap:wrap; }
+  /* R3: provenance strip (secondary weight) + grouped filter bar. */
+  .${ID}-tilesec { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ui-text-tertiary); margin:.2rem 0 .45rem; }
+  .${ID}-tiles[data-sec=\"1\"] .${ID}-num { font-size:16px; }
+  .${ID}-fbar { display:flex; gap:.7rem; align-items:flex-end; flex-wrap:wrap; border:1px solid var(--ui-stroke-secondary); border-radius:8px; padding:.55rem .7rem; margin-bottom:.6rem; background:var(--ui-bg-card); }
+  .${ID}-fbar[data-sec=\"1\"] { opacity:.92; padding:.45rem .7rem; }
+  .${ID}-fgroup { display:flex; flex-direction:column; gap:.25rem; min-width:0; }
+  .${ID}-fgrouplbl { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ui-text-tertiary); }
+  .${ID}-method { font-size:12px; color:var(--ui-text-tertiary); margin:0 0 .6rem; }
+  .${ID}-method summary { cursor:pointer; display:inline-block; }
+  .${ID}-method summary:focus-visible { outline:2px solid var(--ui-accent); outline-offset:1px; }
+  .${ID}-footnote { font-size:12px; color:var(--ui-text-tertiary); margin-top:.6rem; }
   .${ID}-mono { white-space:nowrap; font-variant-numeric:tabular-nums; font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:12px; }
   .${ID}-pill { display:inline-block; padding:1px 8px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; text-transform:uppercase; letter-spacing:.02em; border:1px solid var(--ui-stroke-secondary); color:var(--ui-text-secondary); }
   .${ID}-pill[data-hot="1"] { border-color:var(--ui-accent); color:var(--ui-accent); }
@@ -143,7 +195,7 @@ function ensureStyles() {
   .${ID}-stagerowline { display:flex; justify-content:space-between; gap:.5rem; }
   .${ID}-bar { display:block; height:6px; border-radius:4px; background:var(--chrome-action-hover); margin-top:.25rem; overflow:hidden; }
   .${ID}-bar > span { display:block; height:100%; background:var(--ui-accent); border-radius:4px; }
-  @media (max-width:1100px) {
+  @media (max-width:1500px) {
     .${ID}-todaygrid { grid-template-columns:minmax(0, 1fr); }
     .${ID}-rail { position:static; display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); }
   }
@@ -417,6 +469,13 @@ function TodayView({ openJob }) {
   const q = useApi('/today')
   const [fPri, setFPri] = useState('all')
   const [fText, setFText] = useState('')
+  /* Heading derives from the selected report day else the latest available
+   * report date from /meta — never a hardcoded literal. */
+  const day = useValue($day)
+  const metaQ = useApi('/meta')
+  const metaDays = (metaQ.data && metaQ.data.report_dates) || []
+  const effDay = (day && metaDays.includes(day)) ? day
+    : (metaDays[0] || (metaQ.data && metaQ.data.demo_date) || '')
   const items = useMemo(() => {
     const list = (q.data && q.data.items) || []
     const needle = fText.toUpperCase()
@@ -425,15 +484,28 @@ function TodayView({ openJob }) {
       (!needle || (textOf(i.rig) + ' ' + textOf(i.well) + ' ' + textOf(i.finding) + ' ' + textOf(i.stage) + ' ' + textOf(i.action_required)).toUpperCase().includes(needle)))
   }, [q.data, fPri, fText])
   const total = (q.data && q.data.items && q.data.items.length) || 0
+  /* R3: day context chip (Latest vs Selected) + hot tiles first. Backend
+   * card order untouched — presentation sort only, stable. */
+  const isHotCard = c => (c.key === 'attention' || c.key === 'conflict') && c.value > 0
+  const cards = (q.data.cards || []).map((c, ix) => ({ c, ix }))
+    .sort((a, b) => ((isHotCard(b.c) ? 1 : 0) - (isHotCard(a.c) ? 1 : 0)) || (a.ix - b.ix))
+    .map(x => x.c)
+  const dayChip = effDay ? (day ? 'Selected day ' + effDay : 'Latest report day ' + effDay) : 'No report day'
   return jsx(LoadGate, {
     q, empty: q.data && items.length === 0 ? { title: 'Nothing matches', desc: 'Clear the filters to see all items.' } : null,
     children: q.data ? jsxs('div', {
       children: [
-        jsx('h2', { className: `${ID}-h`, children: 'Today, 19 September 2026' }),
-        jsx('div', { className: `${ID}-sub`, children: 'Only what requires attention. Curated cases are dated to the Sep 19 baseline report; the report-day selector above drives the Rigs & Wells index. ' + q.data.date_rule }),
+        jsxs('div', {
+          className: `${ID}-rowline`,
+          children: [
+            jsx('h2', { className: `${ID}-h`, style: { margin: 0 }, children: effDay ? 'Today, ' + fmtDay(effDay) : 'Today' }),
+            jsx('span', { className: `${ID}-pill`, title: 'Report day driving this heading and the Rigs & Wells index', children: dayChip })
+          ]
+        }),
+        jsx('div', { className: `${ID}-sub`, children: 'Only what requires attention. Report day ' + (effDay || '?') + ' drives this heading and the Rigs & Wells index — change it in the selector above. ' + q.data.date_rule }),
         jsx('div', {
           className: `${ID}-tiles`,
-          children: q.data.cards.map(c => jsx('div', {
+          children: cards.map(c => jsx('div', {
             className: `${ID}-tile`, key: c.key,
             'data-hot': (c.key === 'attention' || c.key === 'conflict') && c.value > 0 ? '1' : '0',
             children: jsxs('div', {
@@ -482,10 +554,10 @@ function TodayView({ openJob }) {
                   key: i.job_id, 'data-hot': i.priority === 'critical' ? '1' : '0',
                   children: [
                     jsx('td', { children: jsx(Pill, { status: i.priority }) }),
-                    jsx('td', { children: jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => openJob(i.job_id), children: jsx('strong', { children: i.rig }) }) }),
+                    jsx('td', { className: `${ID}-cellid`, children: jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => openJob(i.job_id), children: jsx('strong', { children: i.rig }) }) }),
                     jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: i.well }) }),
                     jsx('td', { children: jsx(Pill, { status: i.stage }) }),
-                    jsx('td', { children: i.finding }),
+                    jsx('td', { className: `${ID}-celltext`, title: textOf(i.finding) || undefined, children: i.finding }),
                     jsx('td', { children: i.action_required }),
                     jsx('td', { children: jsx(Pill, { status: i.evidence_state }) }),
                     jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: 'p' + i.source_page }) }),
@@ -621,9 +693,14 @@ function RigsView({ openRig }) {
   const [page, setPage] = useState(0)
   const day = useValue($day)
   const per = 60
+  /* Same stale-day rule as the topbar: an unknown persisted day falls back
+   * to latest (shared /meta cache key, no extra fetch). */
+  const metaQ = useApi('/meta')
+  const metaDays = (metaQ.data && metaQ.data.report_dates) || []
+  const effDay = day && metaDays.includes(day) ? day : ''
   // Full index in one cached read: stage bars and search both run
   // client-side, so every bar tap filters instantly.
-  const q = useApi('/rigs?limit=2000&offset=0' + (day ? '&report_date=' + encodeURIComponent(day) : ''))
+  const q = useApi('/rigs?limit=2000&offset=0' + (effDay ? '&report_date=' + encodeURIComponent(effDay) : ''))
   useEffect(() => { storageSet('rigq', qry); setPage(0) }, [qry, fStage])
   const allRows = (q.data && q.data.rows) || []
   const indexTotal = (q.data && q.data.total) || 0
@@ -647,7 +724,7 @@ function RigsView({ openRig }) {
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Rigs & Wells' }),
-        jsx('div', { className: `${ID}-sub`, children: 'Full Sep 19 index, ' + indexTotal + ' blocks. No bookmarks, no Ctrl+F.' }),
+        jsx('div', { className: `${ID}-sub`, children: 'Index for report day ' + (q.data.report_date || '?') + ', ' + indexTotal + ' blocks. Change the report-day selector above to move this index and the Today heading.' }),
         jsxs('div', {
           className: `${ID}-toolbar`,
           children: [
@@ -778,11 +855,11 @@ function LifecycleView({ openJob }) {
                       children: shown.map(j => jsx('tr', {
                         key: j.id,
                         children: [
-                          jsx('td', { children: jsx('strong', { children: j.rig + ' / ' + j.well }) }),
+                          jsx('td', { className: `${ID}-cellid`, children: jsx('strong', { children: j.rig + ' / ' + j.well }) }),
                           jsx('td', { children: jsx('span', { className: `${ID}-sub`, children: j.cycle }) }),
                           jsx('td', { children: jsx(Pill, { status: j.lifecycle }) }),
                           jsx('td', { children: jsx(Pill, { status: j.priority }) }),
-                          jsx('td', { children: j.finding }),
+                          jsx('td', { className: `${ID}-celltext`, title: textOf(j.finding) || undefined, children: j.finding }),
                           jsx('td', { children: jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => openJob(j.id), children: 'Open' }) })
                         ]
                       }))
@@ -1257,38 +1334,174 @@ function MarketIntelView() {
   const maxSC = Math.max(1, ...bySC.map(x => x.n))
   const SIZE_LBL = { '9.625': '9-5/8"', '13.375': '13-3/8"', '18.625': '18-5/8"' }
   const sizeLbl = s => SIZE_LBL[s] || s
+  /* Inline hint state for a single-bound (open-ended) range — never an error page. */
+  const rangeHint = (start && !end) ? 'From ' + start + ' onward — open-ended range, no prior-period comparison.'
+    : (!start && end) ? 'Up to ' + end + ' — open-ended range, no prior-period comparison.' : ''
+  const leadCo = byCo[0] || null
+  const onN = (byLoc.find(x => x.location === 'onshore') || {}).n || 0
+  const offN = (byLoc.find(x => x.location === 'offshore') || {}).n || 0
+  /* R4: companies loop-closer + provenance strip derive from the same response. */
+  const coSum = byCo.reduce((a, c) => a + (c.n || 0), 0)
+  const ghostN = total - coSum
+  const adjN = (q.data && q.data.totals_by_provenance && q.data.totals_by_provenance.adjudicated) || 0
+  const extrN = (q.data && q.data.totals_by_provenance && q.data.totals_by_provenance.extracted) || 0
+  const unprovN = (q.data && q.data.unproven_company_rows) || 0
+  const ownN = (q.data && q.data.innovex_own && q.data.innovex_own.count) || 0
+  const unkN = (q.data && q.data.unknown_event_dates) || 0
+  const pageN = lineage.with_source_page || 0
   return jsx(LoadGate, {
     q, empty: q.data && rows.length === 0 ? { title: 'No matrix rows', desc: 'Clear the filters to see all rows.' } : null,
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Market Intelligence' }),
-        jsx('div', { className: `${ID}-sub`, children: 'Competitor tool size x company, mined from morning reports. Separate track from ORIO lifecycle: market observations, never operational claims. June ACCEPTED (Ajeez-ruled 2026-10-20): adjudicated COUNTED rows are findings — company UNPROVEN rows count in size/location only, PENDING/EXCLUDED rows and extracted candidates never fold in. ' + lineage.with_source_page + ' of ' + lineage.total + ' rows carry a source page.' }),
-        jsx('div', {
-          className: `${ID}-tiles`,
+        /* R3: methodology wall -> one short line + details. Content kept. */
+        jsx('div', { className: `${ID}-sub`, children: 'Competitor tool size x company, mined from morning reports. June ACCEPTED (Ajeez-ruled 2026-10-20): adjudicated COUNTED rows are findings. ' + lineage.with_source_page + ' of ' + lineage.total + ' rows carry a source page.' }),
+        jsx('details', {
+          className: `${ID}-method`,
           children: [
-            { key: 'rows', label: 'Matrix Rows', value: total },
-            { key: 'adj', label: 'Adjudicated (ruled)', value: (q.data && q.data.totals_by_provenance && q.data.totals_by_provenance.adjudicated) || 0 },
-            { key: 'extr', label: 'Extracted (candidates)', value: (q.data && q.data.totals_by_provenance && q.data.totals_by_provenance.extracted) || 0 },
-            { key: 'on', label: 'Onshore', value: (byLoc.find(x => x.location === 'onshore') || {}).n || 0 },
-            { key: 'off', label: 'Offshore', value: (byLoc.find(x => x.location === 'offshore') || {}).n || 0 },
-            { key: 'unprov', label: 'UNPROVEN company', value: (q.data && q.data.unproven_company_rows) || 0 },
-            { key: 'own', label: 'INNOVEX own (fenced)', value: (q.data && q.data.innovex_own && q.data.innovex_own.count) || 0 },
-            { key: 'unk', label: 'Unknown event date', value: (q.data && q.data.unknown_event_dates) || 0 },
-            { key: 'page', label: 'Page-Linked', value: lineage.with_source_page }
-          ].map(c => jsx('div', {
-            className: `${ID}-tile`, key: c.key,
-            'data-hot': c.key === 'page' && c.value === 0 ? '1' : '0',
-            children: jsxs('div', {
+            jsx('summary', { children: 'How this selection is built' }),
+            jsx('div', {
+              children: 'Separate track from ORIO lifecycle: market observations, never operational claims. Company UNPROVEN rows count in size/location only, PENDING/EXCLUDED rows and extracted candidates never fold in.' +
+                (sel && sel.date_basis_note ? ' ' + sel.date_basis_note + '.' : '') +
+                ((q.data && q.data.unknown_event_dates) ? (' ' + q.data.unknown_event_dates + ' extracted rows have no supported event date and stay visibly unknown.') : '')
+            })
+          ]
+        }),
+        /* Summary of THIS selection — lead element. Every number derives
+         * from the same /matrix response below (by_company/by_size/
+         * by_location/by_status/period_compare/coverage); it recomputes
+         * whenever filters, range or basis change. No second numbers. */
+        jsx('div', {
+          className: `${ID}-panel`,
+          'aria-label': 'Summary of this selection',
+          children: [
+            jsx('div', { className: `${ID}-panelttl`, children: 'Summary of this selection' }),
+            /* R3 composition: anchor (total + leader) | company bars |
+             * size split (stacked bar + legend) | on/offshore | status.
+             * Every number derives from the same /matrix response. */
+            jsx('div', {
+              className: `${ID}-sumgrid`,
               children: [
-                jsx('div', { className: `${ID}-num`, children: String(c.value) }),
-                jsx('div', { className: `${ID}-lbl`, children: c.label })
+                jsxs('div', {
+                  className: `${ID}-sumlead`,
+                  children: [
+                    jsx('span', { className: `${ID}-sumtotal`, children: String(total) }),
+                    jsx('span', { className: `${ID}-sumlbl`, children: 'rows' + (sel && sel.mode === 'range-open' ? ' (open-ended range)' : '') }),
+                    jsx('span', {
+                      className: `${ID}-sumleader`,
+                      children: leadCo ? ['Leader ', jsx('strong', { children: (leadCo.company_display || leadCo.company) + ' ' + leadCo.n }), ' (' + pct(leadCo.share) + ' of company-attributed rows)'] : 'Leader: none — UNPROVEN-only selection, see size/location'
+                    }),
+                    /* R4: WHERE as a 2-segment stacked split bar in the LEFT
+                     * column under the leader line (same sizebar/legend
+                     * primitives as Sizes). Fills the left-column void. */
+                    jsx('div', { className: `${ID}-sumlbl`, style: { marginTop: '.55rem' }, children: 'Where' }),
+                    jsx('div', {
+                      className: `${ID}-sizebar`,
+                      'aria-label': 'Location split: onshore ' + onN + ', offshore ' + offN,
+                      children: [
+                        jsx('span', { key: 'on', title: 'Onshore: ' + onN, style: { width: (onN / Math.max(1, total) * 100) + '%', opacity: 1 } }),
+                        jsx('span', { key: 'off', title: 'Offshore: ' + offN, style: { width: (offN / Math.max(1, total) * 100) + '%', opacity: 0.55 } })
+                      ]
+                    }),
+                    jsx('div', {
+                      className: `${ID}-sizeleg`,
+                      children: [
+                        jsx('span', { key: 'on', children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: 1 } }), 'onshore ' + onN] }),
+                        jsx('span', { key: 'off', children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: 0.55 } }), 'offshore ' + offN] })
+                      ]
+                    }),
+                    ((total - onN - offN) > 0 ? jsx('div', { className: `${ID}-dim`, children: (total - onN - offN) + ' without location' }) : null)
+                  ]
+                }),
+                jsxs('div', {
+                  className: `${ID}-sumcol`,
+                  children: [
+                    byCo.length ? jsxs('div', {
+                      children: [
+                        jsx('div', { className: `${ID}-sumlbl`, children: 'Companies' }),
+                        jsx('div', {
+                          className: `${ID}-bars`,
+                          children: byCo.map(c => jsxs('div', {
+                            className: `${ID}-barrow`, key: c.company, 'data-static': '1',
+                            title: (c.company_display || c.company) + ': ' + c.n + ' rows (' + pct(c.share) + ')',
+                            children: [
+                              jsx('span', { className: `${ID}-barname`, children: (c.company_display || c.company) }),
+                              jsx('span', { className: `${ID}-bar`, children: jsx('span', { style: { width: (c.n / Math.max(1, ...byCo.map(y => y.n)) * 100) + '%', opacity: 1 } }) }),
+                              jsx('span', { className: `${ID}-barnum`, children: String(c.n) })
+                            ]
+                          }))
+                        }),
+                        /* R4: companies loop-closer — bars sum coSum vs total rows. */
+                        (ghostN > 0 ? jsx('div', { className: `${ID}-dim`, children: '+' + ghostN + ' UNPROVEN (counted in size/location only) — bars show ' + coSum + ' of ' + total }) : null)
+                      ]
+                    }) : null,
+                    bySize.length ? jsxs('div', {
+                      children: [
+                        jsx('div', { className: `${ID}-sumlbl`, children: 'Sizes' }),
+                        jsx('div', {
+                          className: `${ID}-sizebar`,
+                          'aria-label': 'Size split: ' + bySize.map(s => sizeLbl(s.size) + ' ' + s.n).join(', '),
+                          children: bySize.map((s, ix) => jsx('span', {
+                            key: s.size, title: sizeLbl(s.size) + ': ' + s.n + ' (' + pct(s.share) + ')',
+                            style: { width: (s.n / Math.max(1, total) * 100) + '%', opacity: [1, 0.55, 0.32, 0.2][Math.min(ix, 3)] }
+                          }))
+                        }),
+                        jsx('div', {
+                          className: `${ID}-sizeleg`,
+                          children: bySize.map((s, ix) => jsx('span', {
+                            key: s.size,
+                            children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: [1, 0.55, 0.32, 0.2][Math.min(ix, 3)] } }), sizeLbl(s.size) + ' ' + s.n + ' (' + pct(s.share) + ')']
+                          }))
+                        })
+                      ]
+                    }) : null,
+                    /* R4: WHERE moved to the LEFT column as a split bar — removed
+                     * here so on/offshore is shown once, visually. */
+                    byStatus.length ? jsxs('div', {
+                      children: [
+                        jsx('div', { className: `${ID}-sumlbl`, children: 'Status' }),
+                        jsx('div', {
+                          className: `${ID}-statuschips`,
+                          children: byStatus.map(s => jsx('span', { key: s.status || 'n/a', className: `${ID}-pill`, children: (s.status || 'n/a') + ' ' + s.n }))
+                        })
+                      ]
+                    }) : null,
+                    rangeHint ? jsx('div', { className: `${ID}-kv`, children: rangeHint }) : null
+                  ]
+                })
               ]
             })
-          }))
+          ]
         }),
-        jsxs('div', {
-          className: `${ID}-toolbar`,
+        /* R4 dedupe: no equal-weight KPI cards — one muted inline strip.
+         * Non-duplicated facts stay readable; the two totals that repeat
+         * the summary anchor sit in a dim parenthetical, stated once. */
+        jsx('div', {
+          className: `${ID}-provstrip`,
+          'aria-label': 'Provenance of this selection',
           children: [
+            jsx('span', { className: `${ID}-tilesec`, style: { margin: 0 }, children: 'Provenance (this selection)' }),
+            jsx('span', {
+              children: ['UNPROVEN company ', jsx('strong', { children: String(unprovN) }), ' · INNOVEX own (fenced) ', jsx('strong', { children: String(ownN) }), ' · Unknown event date ', jsx('strong', { children: String(unkN) }), ' · Extracted (candidates) ', jsx('strong', { children: String(extrN) })]
+            }),
+            jsx('span', { className: `${ID}-dim`, children: pageN === 0 ? '(Adjudicated ' + adjN + ' · Page-linked 0 — needs pages)' : '(Adjudicated ' + adjN + ' · Page-linked ' + pageN + ' — same rows as summary)' })
+          ]
+        }),
+        /* R4: grouped filter toolbar — primary first (date range + date
+         * basis | size | company | search), secondary at lower weight
+         * (source | status | location). Every control keeps its behavior
+         * + aria-labels. */
+        jsxs('div', {
+          className: `${ID}-fbar`,
+          'aria-label': 'Primary filters',
+          children: [
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Date range' }),
+                jsxs('div', {
+                  className: `${ID}-rowline`,
+                  children: [
             jsx('label', {
               className: `${ID}-dim`,
               children: ['From ', jsx('input', {
@@ -1313,19 +1526,73 @@ function MarketIntelView() {
               size: 'xs', variant: 'ghost',
               onClick: () => { setStart(''); setEnd('') },
               children: 'Clear range'
-            }) : null,
+            }) : null
+                  ]
+                })
+              ]
+            }),
+            /* R4: Date basis sits with Date range — one concept, card 1. */
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Date basis' }),
+            jsx(SegmentedControl, {
+              value: fBasis,
+              onChange: v => setFBasis(v),
+              options: [
+                { id: 'report', label: 'Report-date basis' },
+                { id: 'event', label: 'Event-date basis' }
+              ]
+            })
+              ]
+            }),
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Size' }),
             jsx(SegmentedControl, {
               value: fSize || 'all',
               onChange: v => setFSize(v === 'all' ? '' : v),
               options: [{ id: 'all', label: 'All sizes' }].concat(
                 bySize.map(s => ({ id: s.size, label: sizeLbl(s.size) })))
+            })
+              ]
             }),
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Company' }),
             jsx(SegmentedControl, {
               value: fCo || 'all',
               onChange: v => setFCo(v === 'all' ? '' : v),
               options: [{ id: 'all', label: 'All' }].concat(
                 byCo.map(c => ({ id: c.company, label: c.company_display || c.company })))
+            })
+              ]
             }),
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Search' }),
+            jsx(SearchField, {
+              value: fText,
+              onChange: v => setFText(searchVal(v)),
+              placeholder: 'Filter rig, well, company...'
+            })
+              ]
+            }),
+            /* R4: 'Showing N of M' moved to the table header row — off the filter card. */
+          ]
+        }),
+        jsxs('div', {
+          className: `${ID}-fbar`,
+          'data-sec': '1',
+          'aria-label': 'Secondary filters',
+          children: [
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Source' }),
             jsx(SegmentedControl, {
               value: fProv || 'all',
               onChange: v => setFProv(v === 'all' ? '' : v),
@@ -1335,7 +1602,13 @@ function MarketIntelView() {
                 { id: 'workbook', label: 'Benchmark' },
                 { id: 'extracted', label: 'Extracted' }
               ]
+            })
+              ]
             }),
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Status' }),
             jsx(SegmentedControl, {
               value: fStatus || 'all',
               onChange: v => setFStatus(v === 'all' ? '' : v),
@@ -1346,7 +1619,13 @@ function MarketIntelView() {
                 { id: 'PENDING_RULING', label: 'Pending ruling' },
                 { id: 'EXCLUDED', label: 'Excluded' }
               ]
+            })
+              ]
             }),
+            jsxs('div', {
+              className: `${ID}-fgroup`,
+              children: [
+                jsx('div', { className: `${ID}-fgrouplbl`, children: 'Location' }),
             jsx(SegmentedControl, {
               value: fLoc || 'all',
               onChange: v => setFLoc(v === 'all' ? '' : v),
@@ -1355,21 +1634,10 @@ function MarketIntelView() {
                 { id: 'onshore', label: 'Onshore' },
                 { id: 'offshore', label: 'Offshore' }
               ]
-            }),
-            jsx(SegmentedControl, {
-              value: fBasis,
-              onChange: v => setFBasis(v),
-              options: [
-                { id: 'report', label: 'Report-date basis' },
-                { id: 'event', label: 'Event-date basis' }
+            })
               ]
-            }),
-            jsx(SearchField, {
-              value: fText,
-              onChange: v => setFText(searchVal(v)),
-              placeholder: 'Filter rig, well, company...'
-            }),
-            jsx('span', { className: `${ID}-resultcount`, children: 'Showing ' + pageRows.length + ' of ' + rows.length })
+            })
+            /* R4: Date basis moved to the primary card next to Date range. */
           ]
         }),
         jsxs('div', {
@@ -1384,18 +1652,8 @@ function MarketIntelView() {
                     ? ', no prior baseline' : ', ' + (compare.pct_change * 100).toFixed(1) + '%)'))
                 : 'Pick a From/To range to compare against the prior equal-length period.'
             }),
-            jsx('span', {
-              className: `${ID}-dim`,
-              children: coverage
-                ? ('Coverage ' + coverage.event_min + '..' + coverage.event_max +
-                  ', ' + coverage.distinct_event_days + ' event days' +
-                  (coverage.last_update ? ', updated ' + coverage.last_update : '') +
-                  (sel && sel.date_basis_note ? '. ' + sel.date_basis_note : '') +
-                  ((q.data && q.data.unknown_event_dates)
-                    ? (' ' + q.data.unknown_event_dates + ' extracted rows have no supported event date and stay visibly unknown.') : ''))
-                : ''
-            }),
-            jsx('span', { className: `${ID}-resultcount`, children: '' }),
+            /* R4: 'Showing N of M' lives on the table header row, not the filter card. */
+            jsx('span', { className: `${ID}-resultcount`, children: 'Showing ' + pageRows.length + ' of ' + rows.length }),
             jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => dl('csv'), children: 'Export CSV' }),
             jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => dl('xlsx'), children: 'Export XLSX' }),
             jsx(Button, { size: 'xs', onClick: askOrio, children: 'Ask ORIO (this selection)' })
@@ -1447,13 +1705,13 @@ function MarketIntelView() {
                               children: [
                                 jsx('td', { children: r.event_date ? jsx('span', { className: `${ID}-mono`, children: textOf(r.event_date) }) : jsx('span', { className: `${ID}-dim`, children: 'unknown' }) }),
                                 jsx('td', { children: r.report_date ? jsx('span', { className: `${ID}-mono`, children: textOf(r.report_date) }) : jsx('span', { className: `${ID}-dim`, children: 'workbook' }) }),
-                                jsx('td', { children: jsx('strong', { children: r.rig }) }),
+                                jsx('td', { className: `${ID}-cellid`, children: jsx('strong', { children: r.rig }) }),
                                 jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
                                 jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: sizeLbl(r.size) }) }),
                                 jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.company_display || r.company }) }),
                                 jsx('td', { children: r.location ? textOf(r.location) : jsx('span', { className: `${ID}-dim`, children: 'n/a' }) }),
                                 jsx('td', { children: r.status ? jsx('span', { className: `${ID}-pill`, children: textOf(r.status) }) : jsx('span', { className: `${ID}-dim`, children: 'n/a' }) }),
-                                jsx('td', { children: textOf(r.remarks) || jsx('span', { className: `${ID}-dim`, children: 'None' }) }),
+                                jsx('td', { className: `${ID}-celltext`, title: textOf(r.remarks) || undefined, children: textOf(r.remarks) || jsx('span', { className: `${ID}-dim`, children: 'None' }) }),
                                 jsx('td', {
                                   children: ev.has_page
                                     ? jsx('span', { className: `${ID}-mono`, children: 'p' + r.source_page })
@@ -1500,7 +1758,8 @@ function MarketIntelView() {
                       jsx('span', { className: `${ID}-resultcount`, children: 'Page ' + (safePage + 1) + ' of ' + pages }),
                       jsx(Button, { size: 'xs', variant: 'ghost', disabled: safePage >= pages - 1, onClick: () => setPage(safePage + 1), children: 'Next' })
                     ]
-                  }) : null
+                  }) : null,
+                  coverage ? jsx('div', { className: `${ID}-footnote`, children: 'Coverage ' + coverage.event_min + '..' + coverage.event_max + ', ' + coverage.distinct_event_days + ' event days' + (coverage.last_update ? ', updated ' + coverage.last_update : '') + '.' }) : null
                 ]
               })
             }),
@@ -1606,11 +1865,11 @@ function ExpansionView() {
                           key: i,
                           children: [
                             jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.date || 'n/a' }) }),
-                            jsx('td', { children: jsx('strong', { children: r.rig }) }),
+                            jsx('td', { className: `${ID}-cellid`, children: jsx('strong', { children: r.rig }) }),
                             jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
                             jsx('td', { children: r.size }),
                             jsx('td', { children: r.company }),
-                            jsx('td', { children: r.remarks })
+                            jsx('td', { className: `${ID}-celltext`, title: textOf(r.remarks) || undefined, children: r.remarks })
                           ]
                         }))
                       })
@@ -1803,10 +2062,17 @@ function OrioPage() {
   const excQ = useApi('/exceptions')
   const metaQ = useApi('/meta')
   const day = useValue($day)
-  const rigsQ = useApi('/rigs?limit=1&offset=0' + (day ? '&report_date=' + encodeURIComponent(day) : ''))
   const days = (metaQ.data && metaQ.data.report_dates) || []
   const latest = days.length ? days[0] : ''
-  const dayLabel = day || latest || '?'
+  /* A persisted day older than the served set (stale across sessions) must
+   * not silently present as current — fall back to latest until the reset
+   * below clears it. */
+  const dayValid = day && days.includes(day) ? day : ''
+  const dayParam = dayValid || ''
+  useEffect(() => {
+    if (metaQ.data && day && !days.includes(day)) { $day.set(''); storageSet('day', '') }
+  }, [metaQ.data, day])
+  const rigsQ = useApi('/rigs?limit=1&offset=0' + (dayParam ? '&report_date=' + encodeURIComponent(dayParam) : ''))
   const attn = todayQ.data ? todayQ.data.items.filter(i => i.priority === 'critical' || i.priority === 'high').length : 0
   const awaiting = actsQ.data ? actsQ.data.actions.filter(a => a.state === 'awaiting' || a.state === 'blocked').length : 0
   const openExc = excQ.data ? excQ.data.exceptions.filter(x => x.state === 'open').length : 0
@@ -1835,11 +2101,18 @@ function OrioPage() {
         children: [
           jsx('span', { className: `${ID}-title`, children: 'ORIO Operations' }),
           jsx('span', { className: `${ID}-demobadge`, children: 'DEMO, LOCAL DATA ONLY' }),
-          days.length ? jsx('span', { className: `${ID}-daypick`, children: jsx(SegmentedControl, {
-            value: dayLabel,
-            onChange: v => { $day.set(v); storageSet('day', v) },
-            options: days.map(d => ({ id: d, label: d }))
-          }) }) : null,
+          days.length ? jsx('label', {
+            className: `${ID}-daypick`,
+            children: ['Report day ', jsx('select', {
+              value: dayParam,
+              'aria-label': 'Report day',
+              title: 'Report day — drives the Today heading and the Rigs & Wells index',
+              onChange: e => { const v = e.target.value; $day.set(v); storageSet('day', v) },
+              style: { fontFamily: 'inherit', fontSize: '12px', maxWidth: '220px' },
+              children: [jsx('option', { value: '', children: 'Latest (' + latest + ')' })]
+                .concat(days.map(d => jsx('option', { key: d, value: d, children: d })))
+            })]
+          }) : null,
           jsx('span', { className: `${ID}-sub`, style: { margin: 0 }, children: 'No external actions enabled.' }),
           jsx('span', { style: { flex: 1 } }),
           jsx(Button, { size: 'xs', variant: 'ghost', onClick: howItWorks, children: 'How this works' }),

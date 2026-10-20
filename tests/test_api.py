@@ -124,3 +124,57 @@ def test_no_network_imports():
     src = (PKG / 'dashboard' / 'plugin_api.py').read_text()
     for mod in ['socket', 'urllib', 'httpx', 'requests', 'smtplib', 'email.mime']:
         assert f'import {mod}' not in src and f'from {mod}' not in src, mod
+
+
+# ---- Gate2-fix (t_53b19841): date selection + Today date + MI summary ----
+def test_single_bound_range_is_open_ended(client):
+    B = '/api/plugins/euphoria-orio-operations'
+    r = client.get(B + '/matrix?start=2026-06-15')
+    assert r.status_code == 200, r.text[:200]
+    d = r.json()
+    assert d['selection']['mode'] == 'range-open'
+    assert d['selection']['start'] == '2026-06-15'
+    assert d['selection']['end'] is None
+    assert d['period_compare'] is None  # open ranges have no prior-period twin
+    r2 = client.get(B + '/matrix?end=2026-06-15')
+    assert r2.status_code == 200, r2.text[:200]
+    d2 = r2.json()
+    assert d2['selection']['mode'] == 'range-open'
+    assert d2['selection']['start'] is None
+    assert d2['selection']['end'] == '2026-06-15'
+    closed_after = client.get(B + '/matrix?start=2026-06-15&end=2026-07-01').json()
+    closed_before = client.get(B + '/matrix?start=2026-06-01&end=2026-06-15').json()
+    assert d['total'] >= closed_after['total']
+    assert d2['total'] >= closed_before['total']
+    re_ = client.get(B + '/matrix?date_basis=event&start=2026-06-15')
+    assert re_.status_code == 200
+    assert re_.json()['selection']['mode'] == 'range-open'
+    assert client.get(B + '/matrix?start=2026-07-01&end=2026-06-01').status_code == 400
+    assert client.get(B + '/matrix?start=2026-13-40').status_code == 400
+
+
+def test_today_heading_derived_no_hardcoded_date():
+    src = (PKG / 'desktop' / 'plugin.js').read_text(encoding='utf-8')
+    assert '19 September 2026' not in src
+    assert 'fmtDay' in src and 'report_dates' in src
+    # global picker is a native select, not a 92-button segmented control
+    assert 'Report day ' in src and "aria-label': 'Report day'" in src
+
+
+def test_mi_summary_present_and_derived(client):
+    B = '/api/plugins/euphoria-orio-operations'
+    src = (PKG / 'desktop' / 'plugin.js').read_text(encoding='utf-8')
+    assert 'Summary of this selection' in src
+    for field in ('by_company', 'by_size', 'by_location', 'by_status',
+                  'period_compare', 'coverage'):
+        assert field in src, field
+    # the fields the summary reads reconcile with the selection total
+    d = client.get(B + '/matrix').json()
+    assert sum(x['n'] for x in d['by_size']) == d['total']
+    assert sum(x['n'] for x in d['by_location']) == d['total']
+    assert sum(x['n'] for x in d['by_status']) == d['total']
+    assert (sum(x['n'] for x in d['by_company'])
+            == d['total'] - d['unproven_company_rows'])
+    lead = d['by_company'][0]
+    assert lead['share'] == round(lead['n'] / sum(x['n'] for x in d['by_company']), 4)
+    assert all(a['n'] >= b['n'] for a, b in zip(d['by_company'], d['by_company'][1:]))

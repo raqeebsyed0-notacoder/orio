@@ -601,15 +601,24 @@ def _as_date(value: str, name: str) -> _date:
 
 def _resolve_range(month: str = '', start: str = '',
                    end: str = '') -> tuple[str | None, str | None, str]:
-    """Return (start, end, mode) as ISO strings. ``month`` is legacy alias."""
+    """Return (start, end, mode) as ISO strings. ``month`` is legacy alias.
+
+    A single bound is an OPEN-ENDED range (never a 400): start-only means
+    "from start onward", end-only means "up to end". The open side stays
+    NULL so no bound is invented; ``mode`` is 'range' (both bounds),
+    'range-open' (one bound) or 'all'. Callers needing two equal-length
+    periods (``_period_compare``) return None for open ranges.
+    """
     month, start, end = (month or '').strip(), (start or '').strip(), (end or '').strip()
     if start or end:
-        if not (start and end):
-            raise HTTPException(400, 'start and end must be given together (YYYY-MM-DD)')
-        s, e = _as_date(start, 'start'), _as_date(end, 'end')
-        if s > e:
-            raise HTTPException(400, 'start must not be after end')
-        return s.isoformat(), e.isoformat(), 'range'
+        if start and end:
+            s, e = _as_date(start, 'start'), _as_date(end, 'end')
+            if s > e:
+                raise HTTPException(400, 'start must not be after end')
+            return s.isoformat(), e.isoformat(), 'range'
+        if start:
+            return _as_date(start, 'start').isoformat(), None, 'range-open'
+        return None, _as_date(end, 'end').isoformat(), 'range-open'
     if month:
         if not _MONTH_RE.match(month):
             raise HTTPException(400, 'month must be YYYY-MM')
@@ -684,18 +693,25 @@ def _matrix_where(month: str = '', start: str = '', end: str = '',
     if basis not in ('report', 'event'):
         raise HTTPException(400, "date_basis must be 'report' or 'event'")
     where, args = ' WHERE 1=1', []
-    if sel_start:
+    if sel_start or sel_end:
         if basis == 'event':
-            where += (' AND COALESCE('
-                      "NULLIF(json_extract(evidence_json,'$.date_rih'),''),"
-                      " CASE WHEN extraction='extracted' THEN NULL"
-                      ' ELSE date END)>=? AND COALESCE('
-                      "NULLIF(json_extract(evidence_json,'$.date_rih'),''),"
-                      " CASE WHEN extraction='extracted' THEN NULL"
-                      ' ELSE date END)<=?')
+            col = ("COALESCE("
+                   "NULLIF(json_extract(evidence_json,'$.date_rih'),''),"
+                   " CASE WHEN extraction='extracted' THEN NULL"
+                   ' ELSE date END)')
+            if sel_start:
+                where += ' AND ' + col + '>=?'
+                args.append(sel_start)
+            if sel_end:
+                where += ' AND ' + col + '<=?'
+                args.append(sel_end)
         else:
-            where += ' AND date>=? AND date<=?'
-        args += [sel_start, sel_end]
+            if sel_start:
+                where += ' AND date>=?'
+                args.append(sel_start)
+            if sel_end:
+                where += ' AND date<=?'
+                args.append(sel_end)
     if size:
         where += ' AND size=?'
         args.append(size)
@@ -1058,7 +1074,8 @@ def matrix_csv(request: Request, month: str = Query(''),
                         _csv_cell(r['location']),
                         _csv_cell(r['status']),
                         _csv_cell(r['extraction'])])
-    tag = ('%s_to_%s' % (sel['start'], sel['end']) if sel.get('start')
+    tag = ('%s_to_%s' % (sel['start'] or 'open', sel['end'] or 'open')
+           if (sel.get('start') or sel.get('end'))
            else (sel.get('month') or 'all'))
     if sel.get('provenance') not in (None, 'all'):
         tag += '_%s' % sel['provenance']
@@ -1296,7 +1313,8 @@ def matrix_xlsx(request: Request, month: str = Query(''),
         prov_totals, unknown_ev)
     buf = io.BytesIO()
     wb.save(buf)
-    tag = ('%s_to_%s' % (sel['start'], sel['end']) if sel.get('start')
+    tag = ('%s_to_%s' % (sel['start'] or 'open', sel['end'] or 'open')
+           if (sel.get('start') or sel.get('end'))
            else (sel.get('month') or 'all'))
     if sel.get('provenance') not in (None, 'all'):
         tag += '_%s' % sel['provenance']
