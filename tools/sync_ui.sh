@@ -43,7 +43,7 @@ fi
 
 echo "== syncing repo tests -> plugins/tests =="
 mkdir -p "$PLUGINS/tests"
-for f in lane_c_check.py run_api.py test_api.py test_jev_repair.py test_matrix_separation.py test_intelligence_lane7.py test_channels_offline.py; do
+for f in lane_c_check.py run_api.py test_api.py test_jev_repair.py test_matrix_separation.py test_empty_states.py test_intelligence_lane7.py test_channels_offline.py; do
   [ -f "$REPO/tests/$f" ] && cp "$REPO/tests/$f" "$PLUGINS/tests/$f"
 done
 [ -d "$REPO/tests/fixtures" ] && mkdir -p "$PLUGINS/tests/fixtures" && cp -r "$REPO/tests/fixtures/." "$PLUGINS/tests/fixtures/" 2>/dev/null || true

@@ -24,6 +24,9 @@ echo "== pytest: test_api =="
 echo "== pytest: test_matrix_separation =="
 "$PY" -m pytest "$REPO/tests/test_matrix_separation.py" -q
 
+echo "== pytest: test_empty_states (F1/F2) =="
+"$PY" -m pytest "$REPO/tests/test_empty_states.py" -q
+
 echo "== pytest: test_jev_repair =="
 "$PY" -m pytest "$REPO/tests/test_jev_repair.py" -q
 

@@ -276,6 +276,25 @@ function LoadGate({ q, empty, children }) {
   return children
 }
 
+/* F1 (t_57a9f5a3): an empty result must NEVER unmount the filter chrome that
+ * produced it. Views keep their search/segmented/rail controls mounted and
+ * render FilterEmpty inside the content area only. The Clear action resets
+ * ALL view-local filter state (incl. persisted keys) so recovery is one
+ * click, and the copy names only controls that exist on screen. `onClear`
+ * may be null when there is no filter to clear (then no button renders). */
+function FilterEmpty({ title, desc, onClear, clearLabel }) {
+  return jsxs('div', {
+    className: `${ID}-emptywrap`,
+    children: [
+      jsx(EmptyState, { title, description: desc }, 'state'),
+      onClear ? jsx('div', {
+        style: { marginTop: '.6rem', textAlign: 'center' },
+        children: jsx(Button, { size: 'xs', onClick: onClear, children: clearLabel || 'Clear filters' }, 'clear')
+      }, 'wrap') : null
+    ]
+  })
+}
+
 function Pill({ status }) {
   return jsx('span', { className: `${ID}-pill`, 'data-hot': hotState(status), children: status })
 }
@@ -334,7 +353,7 @@ function DecisionButtons({ action, onDone }) {
 function THead({ cols }) {
   return jsx('thead', {
     children: jsx('tr', {
-      children: cols.map(h => jsx('th', { scope: 'col', children: h, key: h }))
+      children: cols.map(h => jsx('th', { scope: 'col', children: h }, h))
     })
   })
 }
@@ -346,7 +365,7 @@ function Donut({ parts, label }) {
   const total = parts.reduce((s, p) => s + p.value, 0)
   let acc = 0
   const R = 15.9155
-  return jsx('div', {
+  return jsxs('div', {
     className: `${ID}-donutrow`,
     children: [
       jsxs('svg', {
@@ -360,28 +379,28 @@ function Donut({ parts, label }) {
             if (!p.value) return null
             const w = Math.max(len - 0.8, 0.5)
             return jsx('circle', {
-              key: p.id, cx: 21, cy: 21, r: R, fill: 'none',
+              cx: 21, cy: 21, r: R, fill: 'none',
               stroke: 'var(--ui-accent)', strokeOpacity: p.opacity,
               strokeWidth: p.active ? 8 : 6, pathLength: 100,
               strokeDasharray: w + ' ' + (100 - w), strokeDashoffset: off,
               style: { cursor: 'pointer' }, onClick: p.onPick,
               children: jsx('title', { children: p.label + ': ' + p.value + '. Activate to filter.' })
-            })
+            }, p.id)
           }) : null,
           jsx('text', { x: 21, y: 21, textAnchor: 'middle', dominantBaseline: 'central', style: { fontSize: '9px', fontWeight: 700, fill: 'var(--ui-text-primary)' }, children: String(total) })
         ]
       }),
       jsx('div', {
         className: `${ID}-legend`,
-        children: parts.map(p => jsx('button', {
-          key: p.id, className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
+        children: parts.map(p => jsxs('button', {
+          className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
           onClick: p.onPick, title: 'Filter table: ' + p.label,
           children: [
             jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: p.opacity } }),
             jsx('span', { style: { flex: 1 }, children: p.label }),
             jsx('span', { className: `${ID}-mono`, children: String(p.value) })
           ]
-        }))
+        }, p.id))
       })
     ]
   })
@@ -405,24 +424,24 @@ function SnapshotRail({ items, fPri, onPri, onStage }) {
   const approvals = ['Awaiting Ajeez', 'Blocked', 'Monitoring'].map(a => ({
     label: a, value: items.filter(i => i.approval === a).length
   }))
-  return jsx('aside', {
+  return jsxs('aside', {
     className: `${ID}-rail`,
     'aria-label': 'Morning snapshot',
     children: [
-      jsx('div', {
-        className: `${ID}-panel`, key: 'pri',
+      jsxs('div', {
+        className: `${ID}-panel`,
         children: [
           jsx('div', { className: `${ID}-panelttl`, children: 'Priority mix, tap to filter' }),
           jsx(Donut, { parts: pri, label: 'Items by priority' })
         ]
-      }),
-      jsx('div', {
-        className: `${ID}-panel`, key: 'stage',
+      }, 'pri'),
+      jsxs('div', {
+        className: `${ID}-panel`,
         children: [
           jsx('div', { className: `${ID}-panelttl`, children: 'Lifecycle mix, tap to search' }),
           jsx('div', {
-            children: stages.map(s => jsx('button', {
-              key: s.stage, className: `${ID}-stagerow`, onClick: () => onStage(s.stage), title: 'Search table: ' + s.stage,
+            children: stages.map(s => jsxs('button', {
+              className: `${ID}-stagerow`, onClick: () => onStage(s.stage), title: 'Search table: ' + s.stage,
               children: [
                 jsxs('span', {
                   className: `${ID}-stagerowline`,
@@ -433,33 +452,33 @@ function SnapshotRail({ items, fPri, onPri, onStage }) {
                 }),
                 jsx('span', { className: `${ID}-bar`, children: jsx('span', { style: { width: (s.count / max * 100) + '%' } }) })
               ]
-            }))
+            }, s.stage))
           })
         ]
-      }),
-      jsx('div', {
-        className: `${ID}-panel`, key: 'appr',
+      }, 'stage'),
+      jsxs('div', {
+        className: `${ID}-panel`,
         children: [
           jsx('div', { className: `${ID}-panelttl`, children: 'Approvals' }),
           jsx('div', {
             children: approvals.map(a => jsxs('div', {
-              key: a.label, className: `${ID}-legline`,
+              className: `${ID}-legline`,
               children: [
                 jsx('span', { children: a.label }),
                 jsx('span', { className: `${ID}-mono`, children: String(a.value) })
               ]
-            }))
+            }, a.label))
           })
         ]
-      }),
-      jsx('div', {
-        className: `${ID}-panel`, key: 'pilot',
+      }, 'appr'),
+      jsxs('div', {
+        className: `${ID}-panel`,
         children: [
           jsx('div', { className: `${ID}-panelttl`, children: 'Pilot link: Month 1 benchmark' }),
           jsx('div', { className: `${ID}-kv`, children: 'This demo is the reconstruction surface for HP-707 / THRY-961612.' }),
           jsx('div', { className: `${ID}-sub`, style: { margin: 0 }, children: 'Milestone 1 pays SAR 3,000 + VAT when Ajeez confirms environment + benchmark in writing.' })
         ]
-      })
+      }, 'pilot')
     ]
   })
 }
@@ -484,6 +503,8 @@ function TodayView({ openJob }) {
       (!needle || (textOf(i.rig) + ' ' + textOf(i.well) + ' ' + textOf(i.finding) + ' ' + textOf(i.stage) + ' ' + textOf(i.action_required)).toUpperCase().includes(needle)))
   }, [q.data, fPri, fText])
   const total = (q.data && q.data.items && q.data.items.length) || 0
+  /* F1b: one-click recovery — resets ALL Today filter state. */
+  const clearAll = () => { setFPri('all'); setFText('') }
   /* R3: day context chip (Latest vs Selected) + hot tiles first. Backend
    * card order untouched — presentation sort only, stable. */
   const isHotCard = c => (c.key === 'attention' || c.key === 'conflict') && c.value > 0
@@ -492,7 +513,7 @@ function TodayView({ openJob }) {
     .map(x => x.c)
   const dayChip = effDay ? (day ? 'Selected day ' + effDay : 'Latest report day ' + effDay) : 'No report day'
   return jsx(LoadGate, {
-    q, empty: q.data && items.length === 0 ? { title: 'Nothing matches', desc: 'Clear the filters to see all items.' } : null,
+    q,
     children: q.data ? jsxs('div', {
       children: [
         jsxs('div', {
@@ -503,10 +524,10 @@ function TodayView({ openJob }) {
           ]
         }),
         jsx('div', { className: `${ID}-sub`, children: 'Only what requires attention. Report day ' + (effDay || '?') + ' drives this heading and the Rigs & Wells index — change it in the selector above. ' + q.data.date_rule }),
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-tiles`,
           children: cards.map(c => jsx('div', {
-            className: `${ID}-tile`, key: c.key,
+            className: `${ID}-tile`,
             'data-hot': (c.key === 'attention' || c.key === 'conflict') && c.value > 0 ? '1' : '0',
             children: jsxs('div', {
               children: [
@@ -514,7 +535,7 @@ function TodayView({ openJob }) {
                 jsx('div', { className: `${ID}-lbl`, children: c.label })
               ]
             })
-          }))
+          }, c.key))
         }),
         jsxs('div', {
           className: `${ID}-toolbar`,
@@ -537,21 +558,29 @@ function TodayView({ openJob }) {
             jsx('span', { className: `${ID}-resultcount`, children: 'Showing ' + items.length + ' of ' + total })
           ]
         }),
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-todaygrid`,
           children: [
             jsx('div', {
               className: `${ID}-todaymain`,
-              children: jsx('div', {
+              /* F1b: empty renders INSIDE the content slot — toolbar, rail
+               * and result count above stay mounted, with one-click Clear. */
+              children: items.length === 0
+                ? jsx(FilterEmpty, {
+                  title: 'Nothing matches',
+                  desc: 'No items match this filter. Use the search field or the priority filter above, or clear them to see all items.',
+                  onClear: clearAll
+                }, 'empty')
+                : jsx('div', {
           className: `${ID}-tablewrap`,
-          children: jsx('table', {
+          children: jsxs('table', {
             className: `${ID}-table`,
             'aria-label': 'Items requiring attention',
             children: [
               jsx(THead, { cols: ['Priority', 'Rig', 'Well', 'Stage', 'Finding', 'Action Required', 'Evidence', 'Page', 'Approval'] }),
-              jsx('tbody', {
-                children: items.map(i => jsx('tr', {
-                  key: i.job_id, 'data-hot': i.priority === 'critical' ? '1' : '0',
+              jsxs('tbody', {
+                children: items.map(i => jsxs('tr', {
+                  'data-hot': i.priority === 'critical' ? '1' : '0',
                   children: [
                     jsx('td', { children: jsx(Pill, { status: i.priority }) }),
                     jsx('td', { className: `${ID}-cellid`, children: jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => openJob(i.job_id), children: jsx('strong', { children: i.rig }) }) }),
@@ -563,7 +592,7 @@ function TodayView({ openJob }) {
                     jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: 'p' + i.source_page }) }),
                     jsx('td', { children: jsx(Pill, { status: i.approval }) })
                   ]
-                }))
+                }, i.job_id))
               })
             ]
           })
@@ -585,6 +614,9 @@ function ActionsView({ openJob }) {
   const open = all.filter(a => a.state === 'awaiting' || a.state === 'blocked')
   const decided = all.length - open.length
   const shown = fState === 'open' ? open : fState === 'all' ? all : all.filter(a => a.state === fState)
+  /* F1 sibling: same LoadGate-empty trap as Today (state rail dropped by the
+   * empty branch). One-click recovery back to the open queue. */
+  const clearAll = () => setFState('open')
   const parts = [
     { id: 'awaiting', label: 'Awaiting', opacity: 1 },
     { id: 'blocked', label: 'Blocked', opacity: 0.7 },
@@ -598,18 +630,29 @@ function ActionsView({ openJob }) {
     onPick: () => setFState(fState === g.id ? 'open' : g.id)
   }))
   return jsx(LoadGate, {
-    q, empty: q.data && shown.length === 0 ? { title: fState === 'open' ? 'Queue is clear' : 'No actions in this state', desc: fState === 'open' ? 'Every proposed action has a decision.' : 'Pick another state in the snapshot rail.' } : null,
+    q,
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Action Queue' }),
         jsx('div', { className: `${ID}-sub`, children: 'Hermes proposes, Ajeez decides. Approve writes to the LOCAL DEMO database only. ' + shown.length + ' shown.' }),
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-todaygrid`,
           children: [
             jsx('div', {
               className: `${ID}-todaymain`,
-              children: shown.map(a => jsx('div', {
-                className: `${ID}-card`, key: a.id, 'data-hot': a.state === 'blocked' ? '1' : '0',
+              /* F1 sibling: empty renders INSIDE the content slot — the Queue
+               * snapshot rail beside it stays mounted, with one-click Clear
+               * whenever a state filter is active. */
+              children: shown.length === 0
+                ? jsx(FilterEmpty, {
+                  title: fState === 'open' ? 'Queue is clear' : 'No actions in this state',
+                  desc: fState === 'open'
+                    ? 'Every proposed action has a decision. Pick a state in the snapshot rail to review decided items.'
+                    : 'Pick another state in the snapshot rail, or clear the filter to see all actions.',
+                  onClear: fState === 'open' ? null : clearAll
+                }, 'empty')
+                : shown.map(a => jsx('div', {
+                className: `${ID}-card`, 'data-hot': a.state === 'blocked' ? '1' : '0',
                 children: jsxs('div', {
                   children: [
                     jsxs('div', {
@@ -636,39 +679,39 @@ function ActionsView({ openJob }) {
                     })
                   ]
                 })
-              }))
+              }, a.id))
             }),
-            jsx('aside', {
+            jsxs('aside', {
               className: `${ID}-rail`,
               'aria-label': 'Queue snapshot',
               children: [
-                jsx('div', {
-                  className: `${ID}-panel`, key: 'state',
+                jsxs('div', {
+                  className: `${ID}-panel`,
                   children: [
                     jsx('div', { className: `${ID}-panelttl`, children: 'Decision states, tap to filter' }),
-                    jsx('div', {
+                    jsxs('div', {
                       className: `${ID}-legend`,
-                      children: parts.map(p => jsx('button', {
-                        key: p.id, className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
+                      children: parts.map(p => jsxs('button', {
+                        className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
                         onClick: p.onPick, title: 'Filter actions: ' + p.label,
                         children: [
                           jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: p.opacity } }),
                           jsx('span', { style: { flex: 1 }, children: p.label }),
                           jsx('span', { className: `${ID}-mono`, children: String(p.value) })
                         ]
-                      }))
+                      }, p.id))
                     })
                   ]
-                }),
-                jsx('div', {
-                  className: `${ID}-panel`, key: 'sum',
+                }, 'state'),
+                jsxs('div', {
+                  className: `${ID}-panel`,
                   children: [
                     jsx('div', { className: `${ID}-panelttl`, children: 'Summary' }),
-                    jsx('div', {
+                    jsxs('div', {
                       children: [
-                        jsxs('div', { className: `${ID}-legline`, key: 'o', children: [jsx('span', { children: 'Open now' }), jsx('span', { className: `${ID}-mono`, children: String(open.length) })] }),
-                        jsxs('div', { className: `${ID}-legline`, key: 'd', children: [jsx('span', { children: 'Decided' }), jsx('span', { className: `${ID}-mono`, children: String(decided) })] }),
-                        jsxs('div', { className: `${ID}-legline`, key: 't', children: [jsx('span', { children: 'Total proposed' }), jsx('span', { className: `${ID}-mono`, children: String(all.length) })] })
+                        jsxs('div', { className: `${ID}-legline`, children: [jsx('span', { children: 'Open now' }), jsx('span', { className: `${ID}-mono`, children: String(open.length) })] }, 'o'),
+                        jsxs('div', { className: `${ID}-legline`, children: [jsx('span', { children: 'Decided' }), jsx('span', { className: `${ID}-mono`, children: String(decided) })] }, 'd'),
+                        jsxs('div', { className: `${ID}-legline`, children: [jsx('span', { children: 'Total proposed' }), jsx('span', { className: `${ID}-mono`, children: String(all.length) })] }, 't')
                       ]
                     }),
                     jsx('div', {
@@ -676,7 +719,7 @@ function ActionsView({ openJob }) {
                       children: jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => setFState(fState === 'all' ? 'open' : 'all'), children: fState === 'all' ? 'Show open only' : 'Show decided too' })
                     })
                   ]
-                })
+                }, 'sum')
               ]
             })
           ]
@@ -702,6 +745,9 @@ function RigsView({ openRig }) {
   // client-side, so every bar tap filters instantly.
   const q = useApi('/rigs?limit=2000&offset=0' + (effDay ? '&report_date=' + encodeURIComponent(effDay) : ''))
   useEffect(() => { storageSet('rigq', qry); setPage(0) }, [qry, fStage])
+  /* F1a BLOCKER fix: one-click recovery resets search + stage + page AND the
+   * persisted `rigq` key, so the sticky session-brick cannot recur. */
+  const clearAll = () => { setQry(''); setFStage('all'); setPage(0); storageSet('rigq', '') }
   const allRows = (q.data && q.data.rows) || []
   const indexTotal = (q.data && q.data.total) || 0
   const stageMap = {}
@@ -720,7 +766,7 @@ function RigsView({ openRig }) {
   const safePage = Math.min(page, pages - 1)
   const pageRows = safePage === page ? rows : filtered.slice(safePage * per, safePage * per + per)
   return jsx(LoadGate, {
-    q, empty: q.data && filtered.length === 0 ? { title: 'No matching blocks', desc: 'Try a different rig, well, or stage.' } : null,
+    q,
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Rigs & Wells' }),
@@ -736,22 +782,29 @@ function RigsView({ openRig }) {
             jsx('span', { className: `${ID}-resultcount`, children: 'Showing ' + pageRows.length + ' of ' + total })
           ]
         }),
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-todaygrid`,
           children: [
             jsx('div', {
               className: `${ID}-todaymain`,
-              children: [
-                jsx('div', {
+              /* F1a: empty renders INSIDE the content slot — search toolbar
+               * and stage rail stay mounted, with one-click Clear that also
+               * wipes the persisted query. */
+              children: filtered.length === 0
+                ? jsx(FilterEmpty, {
+                  title: 'No matching blocks',
+                  desc: 'No blocks match this search or stage. Change the search field or the stage rail, or clear them to see the full index.',
+                  onClear: clearAll
+                }, 'empty')
+                : [jsx('div', {
                   className: `${ID}-tablewrap`,
-                  children: jsx('table', {
+                  children: jsxs('table', {
                     className: `${ID}-table`,
                     'aria-label': 'Rig and well index',
                     children: [
                       jsx(THead, { cols: ['Rig', 'Well', 'Pages', 'Stage', 'ORIO relevance', ''] }),
-                      jsx('tbody', {
-                        children: pageRows.map(r => jsx('tr', {
-                          key: r.rig + r.well,
+                      jsxs('tbody', {
+                        children: pageRows.map(r => jsxs('tr', {
                           children: [
                             jsx('td', { children: jsx('strong', { children: r.rig }) }),
                             jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
@@ -760,11 +813,11 @@ function RigsView({ openRig }) {
                             jsx('td', { children: r.orio_relevance }),
                             jsx('td', { children: jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => openRig(r.rig, r.well), children: 'Open' }) })
                           ]
-                        }))
+                        }, r.rig + r.well))
                       })
                     ]
                   })
-                }),
+                }, 'tbl'),
                 total > per ? jsxs('div', {
                   className: `${ID}-pager`,
                   children: [
@@ -772,20 +825,20 @@ function RigsView({ openRig }) {
                     jsx('span', { className: `${ID}-sub`, style: { margin: 0 }, children: 'Page ' + (safePage + 1) + ' of ' + pages }),
                     jsx(Button, { size: 'xs', variant: 'ghost', disabled: (safePage + 1) * per >= total, onClick: () => setPage(p => (p > pages - 1 ? pages - 1 : p) + 1), children: 'Next' })
                   ]
-                }) : null
+                }, 'pager') : null
               ]
             }),
-            jsx('aside', {
+            jsxs('aside', {
               className: `${ID}-rail`,
               'aria-label': 'Index snapshot',
               children: [
-                jsx('div', {
-                  className: `${ID}-panel`, key: 'stage',
+                jsxs('div', {
+                  className: `${ID}-panel`,
                   children: [
                     jsx('div', { className: `${ID}-panelttl`, children: 'Stages, tap to filter' }),
-                    jsx('div', {
-                      children: stages.map(s => jsx('button', {
-                        key: s.stage, className: `${ID}-stagerow`,
+                    jsxs('div', {
+                      children: stages.map(s => jsxs('button', {
+                        className: `${ID}-stagerow`,
                         'data-active': fStage === s.stage ? '1' : '0',
                         onClick: () => setFStage(fStage === s.stage ? 'all' : s.stage),
                         title: 'Filter index: ' + s.stage,
@@ -799,14 +852,14 @@ function RigsView({ openRig }) {
                           }),
                           jsx('span', { className: `${ID}-bar`, children: jsx('span', { style: { width: (s.count / maxStage * 100) + '%' } }) })
                         ]
-                      }))
+                      }, s.stage))
                     })
                   ]
-                }),
+                }, 'stage'),
                 fStage !== 'all' ? jsx('div', {
-                  className: `${ID}-panel`, key: 'clear',
+                  className: `${ID}-panel`,
                   children: jsx(Button, { size: 'xs', variant: 'ghost', onClick: () => setFStage('all'), children: 'Clear stage filter' })
-                }) : null
+                }, 'clear') : null
               ]
             })
           ]
@@ -956,40 +1009,51 @@ function ExceptionsView({ openJob }) {
     { id: 'resolved', label: 'Resolved', opacity: 0.35, value: resolvedCount, active: fState === 'resolved', onPick: () => setFState(fState === 'resolved' ? 'all' : 'resolved') }
   ]
   const shown = fState === 'all' ? list : list.filter(x => x.state === fState)
+  /* F1e: the Resolved rail filter self-trapped (0 resolved on seed dropped
+   * the rail that un-filters it). One-click recovery to the full list. */
+  const clearAll = () => setFState('all')
   return jsx(LoadGate, {
-    q, empty: q.data && shown.length === 0 ? { title: 'Nothing in this state', desc: 'Pick another state in the snapshot rail.' } : null,
+    q,
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Exceptions' }),
         jsx('div', { className: `${ID}-sub`, children: 'Real inconsistencies with both sources shown. Nothing auto-resolved. ' + openCount + ' open.' }),
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-todaygrid`,
           children: [
             jsx('div', {
               className: `${ID}-todaymain`,
-              children: shown.map(x => jsx(ExceptionCard, { x, openJob, key: x.id }))
+              /* F1e: empty renders INSIDE the content slot — the resolution
+               * rail beside it stays mounted, with one-click Clear. */
+              children: shown.length === 0
+                ? jsx(FilterEmpty, {
+                  title: 'Nothing in this state',
+                  desc: 'Pick another state in the snapshot rail, or clear the filter to see all exceptions.',
+                  onClear: clearAll
+                }, 'empty')
+                : shown.map(x => jsx(ExceptionCard, { x, openJob }, x.id))
             }),
             jsx('aside', {
               className: `${ID}-rail`,
               'aria-label': 'Exceptions snapshot',
-              children: jsx('div', {
-                className: `${ID}-panel`, key: 'state',
+              children: jsxs('div', {
+                className: `${ID}-panel`,
                 children: [
                   jsx('div', { className: `${ID}-panelttl`, children: 'Resolution, tap to filter' }),
-                  jsx('div', {
+                  jsxs('div', {
                     className: `${ID}-legend`,
-                    children: parts.map(p => jsx('button', {
-                      key: p.id, className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
+                    children: parts.map(p => jsxs('button', {
+                      className: `${ID}-legrow`, 'data-active': p.active ? '1' : '0',
                       onClick: p.onPick, title: 'Filter exceptions: ' + p.label,
                       children: [
                         jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: p.opacity } }),
                         jsx('span', { style: { flex: 1 }, children: p.label }),
                         jsx('span', { className: `${ID}-mono`, children: String(p.value) })
                       ]
-                    }))
+                    }, p.id))
                   })
                 ]
-              })
+              }, 'state')
             })
           ]
         })
@@ -1278,6 +1342,13 @@ function MarketIntelView() {
   // unknown event dates are never silently counted by report date.
   const q = useApi('/matrix?date_basis=' + fBasis + (selQs() ? '&' + selQs() : ''))
   useEffect(() => { setPage(0) }, [start, end, fSize, fCo, fProv, fStatus, fLoc, fBasis, fText])
+  /* F1c/F1d: one-click recovery resets ALL nine filter states + paging and
+   * drilldown, back to the default selection (COUNTED, report-date basis). */
+  const clearAll = () => {
+    setStart(''); setEnd(''); setFSize(''); setFCo(''); setFProv('')
+    setFStatus('COUNTED'); setFLoc(''); setFBasis('report'); setFText('')
+    setPage(0); setSelRow(null)
+  }
   const allRows = (q.data && q.data.rows) || []
   const bySize = (q.data && q.data.by_size) || []
   const byCo = (q.data && q.data.by_company) || []
@@ -1350,13 +1421,13 @@ function MarketIntelView() {
   const unkN = (q.data && q.data.unknown_event_dates) || 0
   const pageN = lineage.with_source_page || 0
   return jsx(LoadGate, {
-    q, empty: q.data && rows.length === 0 ? { title: 'No matrix rows', desc: 'Clear the filters to see all rows.' } : null,
+    q,
     children: q.data ? jsxs('div', {
       children: [
         jsx('h2', { className: `${ID}-h`, children: 'Market Intelligence' }),
         /* R3: methodology wall -> one short line + details. Content kept. */
         jsx('div', { className: `${ID}-sub`, children: 'Competitor tool size x company, mined from morning reports. June ACCEPTED (Ajeez-ruled 2026-10-20): adjudicated COUNTED rows are findings. ' + lineage.with_source_page + ' of ' + lineage.total + ' rows carry a source page.' }),
-        jsx('details', {
+        jsxs('details', {
           className: `${ID}-method`,
           children: [
             jsx('summary', { children: 'How this selection is built' }),
@@ -1371,7 +1442,7 @@ function MarketIntelView() {
          * from the same /matrix response below (by_company/by_size/
          * by_location/by_status/period_compare/coverage); it recomputes
          * whenever filters, range or basis change. No second numbers. */
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-panel`,
           'aria-label': 'Summary of this selection',
           children: [
@@ -1379,7 +1450,7 @@ function MarketIntelView() {
             /* R3 composition: anchor (total + leader) | company bars |
              * size split (stacked bar + legend) | on/offshore | status.
              * Every number derives from the same /matrix response. */
-            jsx('div', {
+            jsxs('div', {
               className: `${ID}-sumgrid`,
               children: [
                 jsxs('div', {
@@ -1387,27 +1458,27 @@ function MarketIntelView() {
                   children: [
                     jsx('span', { className: `${ID}-sumtotal`, children: String(total) }),
                     jsx('span', { className: `${ID}-sumlbl`, children: 'rows' + (sel && sel.mode === 'range-open' ? ' (open-ended range)' : '') }),
-                    jsx('span', {
+                    jsxs('span', {
                       className: `${ID}-sumleader`,
-                      children: leadCo ? ['Leader ', jsx('strong', { children: (leadCo.company_display || leadCo.company) + ' ' + leadCo.n }), ' (' + pct(leadCo.share) + ' of company-attributed rows)'] : 'Leader: none — UNPROVEN-only selection, see size/location'
+                      children: leadCo ? ['Leader ', jsx('strong', { children: (leadCo.company_display || leadCo.company) + ' ' + leadCo.n }, 'lc'), ' (' + pct(leadCo.share) + ' of company-attributed rows)'] : ['Leader: none — UNPROVEN-only selection, see size/location']
                     }),
                     /* R4: WHERE as a 2-segment stacked split bar in the LEFT
                      * column under the leader line (same sizebar/legend
                      * primitives as Sizes). Fills the left-column void. */
                     jsx('div', { className: `${ID}-sumlbl`, style: { marginTop: '.55rem' }, children: 'Where' }),
-                    jsx('div', {
+                    jsxs('div', {
                       className: `${ID}-sizebar`,
                       'aria-label': 'Location split: onshore ' + onN + ', offshore ' + offN,
                       children: [
-                        jsx('span', { key: 'on', title: 'Onshore: ' + onN, style: { width: (onN / Math.max(1, total) * 100) + '%', opacity: 1 } }),
-                        jsx('span', { key: 'off', title: 'Offshore: ' + offN, style: { width: (offN / Math.max(1, total) * 100) + '%', opacity: 0.55 } })
+                        jsx('span', { title: 'Onshore: ' + onN, style: { width: (onN / Math.max(1, total) * 100) + '%', opacity: 1 } }, 'on'),
+                        jsx('span', { title: 'Offshore: ' + offN, style: { width: (offN / Math.max(1, total) * 100) + '%', opacity: 0.55 } }, 'off')
                       ]
                     }),
-                    jsx('div', {
+                    jsxs('div', {
                       className: `${ID}-sizeleg`,
                       children: [
-                        jsx('span', { key: 'on', children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: 1 } }), 'onshore ' + onN] }),
-                        jsx('span', { key: 'off', children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: 0.55 } }), 'offshore ' + offN] })
+                        jsxs('span', { children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: 1 } }), 'onshore ' + onN] }, 'on'),
+                        jsxs('span', { children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: 0.55 } }), 'offshore ' + offN] }, 'off')
                       ]
                     }),
                     ((total - onN - offN) > 0 ? jsx('div', { className: `${ID}-dim`, children: (total - onN - offN) + ' without location' }) : null)
@@ -1419,17 +1490,17 @@ function MarketIntelView() {
                     byCo.length ? jsxs('div', {
                       children: [
                         jsx('div', { className: `${ID}-sumlbl`, children: 'Companies' }),
-                        jsx('div', {
+                        jsxs('div', {
                           className: `${ID}-bars`,
                           children: byCo.map(c => jsxs('div', {
-                            className: `${ID}-barrow`, key: c.company, 'data-static': '1',
+                            className: `${ID}-barrow`, 'data-static': '1',
                             title: (c.company_display || c.company) + ': ' + c.n + ' rows (' + pct(c.share) + ')',
                             children: [
                               jsx('span', { className: `${ID}-barname`, children: (c.company_display || c.company) }),
                               jsx('span', { className: `${ID}-bar`, children: jsx('span', { style: { width: (c.n / Math.max(1, ...byCo.map(y => y.n)) * 100) + '%', opacity: 1 } }) }),
                               jsx('span', { className: `${ID}-barnum`, children: String(c.n) })
                             ]
-                          }))
+                          }, c.company))
                         }),
                         /* R4: companies loop-closer — bars sum coSum vs total rows. */
                         (ghostN > 0 ? jsx('div', { className: `${ID}-dim`, children: '+' + ghostN + ' UNPROVEN (counted in size/location only) — bars show ' + coSum + ' of ' + total }) : null)
@@ -1438,20 +1509,19 @@ function MarketIntelView() {
                     bySize.length ? jsxs('div', {
                       children: [
                         jsx('div', { className: `${ID}-sumlbl`, children: 'Sizes' }),
-                        jsx('div', {
+                        jsxs('div', {
                           className: `${ID}-sizebar`,
                           'aria-label': 'Size split: ' + bySize.map(s => sizeLbl(s.size) + ' ' + s.n).join(', '),
                           children: bySize.map((s, ix) => jsx('span', {
-                            key: s.size, title: sizeLbl(s.size) + ': ' + s.n + ' (' + pct(s.share) + ')',
+                            title: sizeLbl(s.size) + ': ' + s.n + ' (' + pct(s.share) + ')',
                             style: { width: (s.n / Math.max(1, total) * 100) + '%', opacity: [1, 0.55, 0.32, 0.2][Math.min(ix, 3)] }
-                          }))
+                          }, s.size))
                         }),
-                        jsx('div', {
+                        jsxs('div', {
                           className: `${ID}-sizeleg`,
-                          children: bySize.map((s, ix) => jsx('span', {
-                            key: s.size,
+                          children: bySize.map((s, ix) => jsxs('span', {
                             children: [jsx('span', { className: `${ID}-swatch`, style: { background: 'var(--ui-accent)', opacity: [1, 0.55, 0.32, 0.2][Math.min(ix, 3)] } }), sizeLbl(s.size) + ' ' + s.n + ' (' + pct(s.share) + ')']
-                          }))
+                          }, s.size))
                         })
                       ]
                     }) : null,
@@ -1460,9 +1530,9 @@ function MarketIntelView() {
                     byStatus.length ? jsxs('div', {
                       children: [
                         jsx('div', { className: `${ID}-sumlbl`, children: 'Status' }),
-                        jsx('div', {
+                        jsxs('div', {
                           className: `${ID}-statuschips`,
-                          children: byStatus.map(s => jsx('span', { key: s.status || 'n/a', className: `${ID}-pill`, children: (s.status || 'n/a') + ' ' + s.n }))
+                          children: byStatus.map(s => jsx('span', { className: `${ID}-pill`, children: (s.status || 'n/a') + ' ' + s.n }, s.status || 'n/a'))
                         })
                       ]
                     }) : null,
@@ -1476,13 +1546,13 @@ function MarketIntelView() {
         /* R4 dedupe: no equal-weight KPI cards — one muted inline strip.
          * Non-duplicated facts stay readable; the two totals that repeat
          * the summary anchor sit in a dim parenthetical, stated once. */
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-provstrip`,
           'aria-label': 'Provenance of this selection',
           children: [
             jsx('span', { className: `${ID}-tilesec`, style: { margin: 0 }, children: 'Provenance (this selection)' }),
-            jsx('span', {
-              children: ['UNPROVEN company ', jsx('strong', { children: String(unprovN) }), ' · INNOVEX own (fenced) ', jsx('strong', { children: String(ownN) }), ' · Unknown event date ', jsx('strong', { children: String(unkN) }), ' · Extracted (candidates) ', jsx('strong', { children: String(extrN) })]
+            jsxs('span', {
+              children: ['UNPROVEN company ', jsx('strong', { children: String(unprovN) }, 'u'), ' · INNOVEX own (fenced) ', jsx('strong', { children: String(ownN) }, 'o'), ' · Unknown event date ', jsx('strong', { children: String(unkN) }, 'k'), ' · Extracted (candidates) ', jsx('strong', { children: String(extrN) }, 'e')]
             }),
             jsx('span', { className: `${ID}-dim`, children: pageN === 0 ? '(Adjudicated ' + adjN + ' · Page-linked 0 — needs pages)' : '(Adjudicated ' + adjN + ' · Page-linked ' + pageN + ' — same rows as summary)' })
           ]
@@ -1502,7 +1572,7 @@ function MarketIntelView() {
                 jsxs('div', {
                   className: `${ID}-rowline`,
                   children: [
-            jsx('label', {
+            jsxs('label', {
               className: `${ID}-dim`,
               children: ['From ', jsx('input', {
                 type: 'date', value: start, 'aria-label': 'Range start (event date)',
@@ -1512,7 +1582,7 @@ function MarketIntelView() {
                 style: { fontFamily: 'inherit', fontSize: '12px' }
               })]
             }),
-            jsx('label', {
+            jsxs('label', {
               className: `${ID}-dim`,
               children: ['To ', jsx('input', {
                 type: 'date', value: end, 'aria-label': 'Range end (event date)',
@@ -1678,27 +1748,35 @@ function MarketIntelView() {
             (orioSel.selection && orioSel.selection.provenance && orioSel.selection.provenance !== 'all' ? (', ' + orioSel.selection.provenance + ' only') : '') +
             '. Same selection reproduces this row set in /matrix and both exports.'
         }) : null,
-        jsx('div', {
+        jsxs('div', {
           className: `${ID}-todaygrid`,
           children: [
             jsx('div', {
               className: `${ID}-todaymain`,
-              children: jsxs('div', {
+              /* F1c/F1d: empty renders INSIDE the content slot — summary,
+               * provenance strip, filter bars, toolbar and rails stay
+               * mounted, with one-click Clear. */
+              children: rows.length === 0
+                ? jsx(FilterEmpty, {
+                  title: 'No matrix rows',
+                  desc: 'No rows match this selection. Change the filters above, or clear them to see all rows.',
+                  onClear: clearAll
+                }, 'empty')
+                : jsxs('div', {
                 children: [
                   jsx('div', {
                     className: `${ID}-tablewrap`,
-                    children: jsx('table', {
+                    children: jsxs('table', {
                       className: `${ID}-table`,
                       'aria-label': 'Competitor matrix rows',
                       children: [
                         jsx(THead, { cols: ['Event (RIH)', 'Report', 'Rig', 'Well', 'Size', 'Company', 'Location', 'Status', 'Remarks', 'Evidence'] }),
-                        jsx('tbody', {
+                        jsxs('tbody', {
                           children: pageRows.flatMap((r, i) => {
                             const rid = r.id || (r.date + r.rig + r.well + i)
                             const open = selRow === rid
                             const ev = r.evidence || {}
-                            const main = jsx('tr', {
-                              key: rid,
+                            const main = jsxs('tr', {
                               onClick: () => setSelRow(open ? null : rid),
                               style: { cursor: 'pointer' },
                               title: 'Click for evidence drilldown',
@@ -1720,10 +1798,9 @@ function MarketIntelView() {
                                       : jsx('span', { className: `${ID}-dim`, children: 'workbook' }))
                                 })
                               ]
-                            })
+                            }, rid)
                             if (!open) return [main]
                             return [main, jsx('tr', {
-                              key: rid + ':ev',
                               children: jsx('td', {
                                 colSpan: 10,
                                 children: jsx('div', {
@@ -1744,7 +1821,7 @@ function MarketIntelView() {
                                   ].join('')
                                 })
                               })
-                            })]
+                            }, rid + ':ev')]
                           })
                         })
                       ]
@@ -1770,10 +1847,10 @@ function MarketIntelView() {
                   jsx('div', { className: `${ID}-railcard`, children: jsxs('div', {
                     children: [
                       jsx('div', { className: `${ID}-railtitle`, children: 'Size x Company' }),
-                      jsx('div', {
+                      jsxs('div', {
                         className: `${ID}-bars`,
                         children: bySC.map(x => jsxs('div', {
-                          className: `${ID}-barrow`, key: x.size + x.company,
+                          className: `${ID}-barrow`,
                           onClick: () => { setFSize(x.size); setFCo(x.company) },
                           children: [
                             jsx('span', { className: `${ID}-barname`, children: sizeLbl(x.size) + ' ' + (x.company_display || x.company) }),
@@ -1782,24 +1859,24 @@ function MarketIntelView() {
                             }),
                             jsx('span', { className: `${ID}-barnum`, children: String(x.n) })
                           ]
-                        }))
+                        }, x.size + x.company))
                       })
                     ]
                   }) }),
                   jsx('div', { className: `${ID}-railcard`, children: jsxs('div', {
                     children: [
                       jsx('div', { className: `${ID}-railtitle`, children: 'Companies' }),
-                      jsx('div', {
+                      jsxs('div', {
                         className: `${ID}-bars`,
                         children: byCo.map(c => jsxs('div', {
-                          className: `${ID}-barrow`, key: c.company,
+                          className: `${ID}-barrow`,
                           onClick: () => setFCo(c.company),
                           children: [
                             jsx('span', { className: `${ID}-barname`, children: (c.company_display || c.company) + ' ' + pct(c.share) }),
                             jsx('span', { className: `${ID}-bar`, style: { width: (c.n / Math.max(1, ...byCo.map(y => y.n)) * 100) + '%' } }),
                             jsx('span', { className: `${ID}-barnum`, children: String(c.n) })
                           ]
-                        }))
+                        }, c.company))
                       })
                     ]
                   }) }),
