@@ -192,6 +192,22 @@ def _resolve_company(raw: str) -> tuple[str, str | None]:
     return code, None
 
 
+def _company_display(code: str) -> str:
+    """FULL NAME (CODE) display for a canonical company code (m3).
+
+    TAM stays 'TAM (TAM)' per its needs-ajeez-confirmation status —
+    never expanded. Unknown codes (incl. UNPROVEN) pass through
+    verbatim: UNPROVEN is a ruling status, not a company identity.
+    """
+    c = (code or '').strip().upper()
+    if not c:
+        return ''
+    for canon, entry in ((_aliases().get('mapping') or {}).items()):
+        if canon.upper() == c:
+            return entry.get('display') or c
+    return c
+
+
 # ---------------------------------------------------------- Phase 3 hardening
 # Approvals are attributed, never anonymous. The gateway fronts route auth in
 # production; this module binds the approval actor as follows:
@@ -815,6 +831,7 @@ def _enrich_matrix_row(row: dict[str, Any]) -> dict[str, Any]:
     row['date_rih'] = event_date  # compat alias
     row['report_date'] = report_date
     row['source_event_times'] = event_times
+    row['company_display'] = _company_display(str(row.get('company') or ''))
     row['location'] = row.get('location') or evidence.get('location')
     row['status'] = row.get('status') or evidence.get('status')
     row['authority'] = evidence.get('authority')
@@ -941,7 +958,9 @@ def matrix(request: Request, month: str = Query(''), start: str = Query(''),
                                           'any date — includes rows an '
                                           'event-basis range excludes'),
             'by_size': _with_shares(sizes, 'size'),
-            'by_company': _with_shares(comps, 'company'),
+            'by_company': [{**r, 'company_display':
+                            _company_display(str(r.get('company') or ''))}
+                           for r in _with_shares(comps, 'company')],
             'by_location': _with_shares(
                 [{'location': r['location'], 'n': r['n']} for r in locs],
                 'location'),
@@ -955,7 +974,9 @@ def matrix(request: Request, month: str = Query(''), start: str = Query(''),
                                     'scope: fenced in innovex_own, never in '
                                     'matrix totals'},
             'by_month': months,
-            'by_size_company': by_size_company,
+            'by_size_company': [{**r, 'company_display':
+                                 _company_display(str(r.get('company') or ''))}
+                                for r in by_size_company],
             'period_compare': compare,
             'coverage': coverage,
             'lineage': {'with_source_page': with_page, 'total': total},
@@ -1546,14 +1567,14 @@ def _stale_lane7(view: dict[str, Any]) -> dict[str, Any]:
     return view
 
 try:
-    from intelligence import build_bundle
+    from intelligence import build_bundle, build_bundle_v2
 except Exception:  # pragma: no cover - gateway loads dashboard standalone
     import sys as _sys2
 
     _here2 = str(Path(__file__).resolve().parent)
     if _here2 not in _sys2.path:
         _sys2.path.insert(0, _here2)
-    from intelligence import build_bundle  # type: ignore[no-redef]
+    from intelligence import build_bundle, build_bundle_v2  # type: ignore[no-redef]
 
 
 @router.get('/intelligence/upcoming')
@@ -1564,8 +1585,8 @@ def intelligence_upcoming(as_of: str = Query('2026-06-30')) -> dict[str, Any]:
 
 @router.get('/intelligence/suppliers/first-seen')
 def intelligence_first_seen() -> dict[str, Any]:
-    """Feature 2: first supplier appearances + repeat use, coverage shown."""
-    return _stale_lane7(build_bundle()['suppliers'])
+    """Feature 2: first supplier appearances + repeat use, v2 ruled rows."""
+    return build_bundle_v2()['suppliers']
 
 
 @router.get('/intelligence/tool-problems')
@@ -1576,8 +1597,8 @@ def intelligence_problems() -> dict[str, Any]:
 
 @router.get('/intelligence/corrections')
 def intelligence_corrections() -> dict[str, Any]:
-    """Feature 4: reviewer correction flow with originals + effort metrics."""
-    return _stale_lane7(build_bundle()['corrections'])
+    """Feature 4: reviewer correction flow over Ajeez's 2026-10-20 rulings."""
+    return build_bundle_v2()['corrections']
 
 
 @router.get('/intelligence/questions')

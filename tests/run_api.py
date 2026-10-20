@@ -266,11 +266,68 @@ check('matrix-june-boundary',
       sum(1 for r in c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&limit=5000').json()['rows']
           if r.get('june_boundary')) == exp_boundary,
       'boundary=%d' % exp_boundary)
-# M4: lane-7 views stay green but are visibly marked stale vs the rulings.
-check('matrix-lane7-stale',
+# M4: lane-7 currency — suppliers + corrections serve the v2 ruled data
+# with no stale flag; upcoming + tool-problems still read the pre-v2
+# day-event registers (v2 rows carry no report context text) and stay
+# visibly marked until a context-carrying v2 register exists.
+sup7 = c.get(B + '/intelligence/suppliers/first-seen').json()
+check('lane7-suppliers-fresh', 'stale' not in sup7
+      and {s['supplier_code']: s['repeat_use']['observations']
+           for s in sup7['suppliers']}
+      == {s['company']: s['n'] for s in mx['by_company']},
+      str([(s['supplier_code'], s['repeat_use']['observations'])
+           for s in sup7['suppliers']]))
+check('lane7-suppliers-ruled',
+      {s['supplier_code']: s['repeat_use']['observations']
+       for s in sup7['suppliers']}
+      == {'WFD': 47, 'HAL': 39, 'FET': 26, 'TAM': 10}
+      and sum(s['repeat_use']['observations'] for s in sup7['suppliers'])
+      + sup7['unproven_company_rows'] == exp_total == 123,
+      'ruled WFD47/HAL39/FET26/TAM10 (+1 UNPROVEN = 123 COUNTED)')
+check('lane7-suppliers-display',
+      {s['supplier_code']: s['supplier_display'] for s in sup7['suppliers']}
+      == {'WFD': 'WEATHERFORD (WFD)', 'HAL': 'HALLIBURTON (HAL)',
+          'FET': 'FORUM ENERGY TECHNOLOGIES (FET)', 'TAM': 'TAM (TAM)'}
+      and sup7['unproven_company_rows'] == exp_unproven)
+cor7 = c.get(B + '/intelligence/corrections').json()
+check('lane7-corrections-fresh', 'stale' not in cor7
+      and cor7['ruling']['authority'] == 'Ajeez'
+      and cor7['ruling']['date'] == '2026-10-20')
+check('lane7-corrections-ruled',
+      len(cor7['applied_corrections']) == 2
+      and {a['row'] for a in cor7['applied_corrections']} == {65, 79}
+      and all(a['status'] == 'APPLIED' and a['history_preserved']
+              for a in cor7['applied_corrections'])
+      and len(cor7['kept_at_tam']) == 3
+      and len(cor7['provisional_rows']) == 3
+      and len(cor7['codified_rules']) == 2)
+check('lane7-context-views-stale',
       all(c.get(B + u).json().get('stale') is True
-          for u in ('/intelligence/upcoming', '/intelligence/suppliers/first-seen',
-                    '/intelligence/tool-problems', '/intelligence/corrections')))
+          for u in ('/intelligence/upcoming', '/intelligence/tool-problems')))
+# m3: /matrix serves FULL NAME (CODE) display alongside the canonical
+# code; filtering by code / report alias still resolves to the code.
+mxd = c.get(B + '/matrix?provenance=adjudicated&status=COUNTED&limit=5000').json()
+check('matrix-display-on-rows',
+      all(r.get('company_display') for r in mxd['rows'])
+      and all(r['company'] in ('WFD', 'HAL', 'FET', 'TAM', 'UNPROVEN')
+              for r in mxd['rows']))
+hal_rows = [r for r in mxd['rows'] if r['company'] == 'HAL']
+tam_rows = [r for r in mxd['rows'] if r['company'] == 'TAM']
+check('matrix-display-hal-tam',
+      hal_rows and all(r['company_display'] == 'HALLIBURTON (HAL)'
+                       for r in hal_rows)
+      and tam_rows and all(r['company_display'] == 'TAM (TAM)'
+                           for r in tam_rows))
+check('matrix-display-groupings',
+      {g['company']: g['company_display'] for g in mxd['by_company']}
+      == {g['company']: g['company_display']
+          for g in mx['by_company']}
+      and all(g.get('company_display') for g in mxd['by_company'])
+      and all(g.get('company_display') for g in mxd['by_size_company']))
+check('matrix-display-filter-keeps-code',
+      all(r['company'] == 'HAL'
+          and r['company_display'] == 'HALLIBURTON (HAL)'
+          for r in mxf['rows']) and mxf['rows'])
 # ---- T3 source_page lineage (no-invent rule) ----
 # Ajeez-ruled rows carry the ruled report citation verbatim (provenance
 # 'adjudicated', authority in evidence_json). No NULLs. Extracted rows

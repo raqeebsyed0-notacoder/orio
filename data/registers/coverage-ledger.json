@@ -1,0 +1,137 @@
+{
+ "lane": "LANE-2-OCR-COVERAGE-2026-10-19",
+ "ocr_paths_probed": {
+  "tesseract": "ABSENT at lane start (no binary, no langs) -> INSTALLED 5.5.3 user-local via scoop + eng.traineddata (tessdata_fast, 4.1MB)",
+  "ocrmypdf": "not installed (not needed; direct render+OCR used)",
+  "pytesseract": "not installed; tesseract CLI via subprocess",
+  "pymupdf": "1.28.2 present (render path)",
+  "easyocr_paddleocr": "not installed; not needed",
+  "cloud_service": "not authorized, not used"
+ },
+ "june_06_26_ocr": {
+  "run_id": "LANE2-OCR-2026-10-19-T1",
+  "path": "LMR06262026.pdf",
+  "source_sha256": "f88f93731fa3f7c81172381ccaa6bebb57a574996c8da0a66bc2a723556b458d",
+  "status": "processed_ocr",
+  "engine": "tesseract 5.5.3.20260724 (scoop user-local) + eng traineddata",
+  "lang": "eng",
+  "psm": 6,
+  "render": "pymupdf 1.28.2 @ 200 DPI",
+  "workers": 8,
+  "pages": 749,
+  "pages_ok": 749,
+  "pages_empty": 0,
+  "pages_failed": 0,
+  "timing": {
+   "utc_start": "2026-10-18T21:52:16.235767+00:00",
+   "utc_end": "2026-10-18T22:03:00.549463+00:00",
+   "wall_elapsed_s": 644.6,
+   "sum_page_elapsed_s": 5133.6,
+   "per_page_s": {
+    "median": 7.09,
+    "p95": 10.56,
+    "max": 13.7
+   }
+  },
+  "char_stats": {
+   "total": 1820594,
+   "min": 201,
+   "median": 2609,
+   "max": 5550
+  },
+  "min_char_pages_note": "short pages spot-checked (p749: header+totals block) = legitimate short content, not failure",
+  "content_signals": {
+   "day_headers_06_26_2026": 275,
+   "DV_mentions": 89,
+   "RIG_mentions": 4809,
+   "company_tokens": {
+    "WEATHERFORD": 10,
+    "HALLIBURTON": 21,
+    "SCHLUMBERGER": 0,
+    "BAKER": 155,
+    "NOV": 51,
+    "WFD": 92,
+    "HAL": 17,
+    "SLB": 295,
+    "FET": 10,
+    "TAM": 5
+   }
+  },
+  "all_12_workbook_rigs_in_ocr_text": true,
+  "validation": {
+   "sample_pages": "scratch/lane2-ocr/p0001.txt, p0375.txt, p0749.txt human-inspected, operational content legible",
+   "ocr_vs_native_token_recall": "97.1% on LMR06252026 p1 (313 native tokens)"
+  },
+  "text_evidence_dir": "C:/Users/THinkPad/AppData/Local/hermes/cache/scratch/lane2-ocr/fullrun/page-XXXX.txt"
+ },
+ "text_pdfs": "all June text PDFs except 06-26: processed per LANE-G-2026-10-18-T1 (19,233 pages, zero empty-text pages); not re-run here",
+ "text_pdf_baseline": "LANE-G-2026-10-18-T1",
+ "companion_files": [
+  {
+   "path": "LMR06102026-1_260610_064853.docx",
+   "sha256": "aed2ee6d2321c81612582be7901a54d02c0dc1574a96aed70f583e7b850487b3",
+   "date": "2026-06-10",
+   "status": "duplicate_subset",
+   "disposition": "redundant_subset_pdf_canonical",
+   "evidence": {
+    "same_print_header": "Print Date 06/10/2026 06:19, SANTIARB, RMTN-24, OPERLMTDMRREP",
+    "pdf_rigs": 225,
+    "pdf_wells": 147,
+    "pdf_day_headers": 288,
+    "docx_rigs": 27,
+    "docx_wells": 19,
+    "docx_day_headers": 30,
+    "docx_sharing_all_with_pdf": "27/27 rigs, 19/19 wells",
+    "jaccard_note": "raw token jaccard 0.213 is layout-driven; rig/well identity overlap is the duplication evidence"
+   }
+  }
+ ],
+ "absent_dates": {
+  "0614": [
+   {
+    "sno": 59,
+    "rig": "SINO-50L",
+    "well": "SDGM-1529",
+    "size": 9.625,
+    "company": "HAL"
+   }
+  ],
+  "0627": [
+   {
+    "sno": 122,
+    "rig": "ADC-41L",
+    "well": "SDGM-1316",
+    "size": 13.375,
+    "company": "WFD"
+   },
+   {
+    "sno": 123,
+    "rig": "ADM-505",
+    "well": "ZULF-1488",
+    "size": 13.375,
+    "company": "FET"
+   }
+  ],
+  "0629": [
+   {
+    "sno": 124,
+    "rig": "SINO-46L",
+    "well": "SHYB-374",
+    "size": 9.625,
+    "company": "WFD"
+   }
+  ]
+ },
+ "july1_adjacency": {
+  "path": "LMR07012026.pdf",
+  "sha256": "bcbbd6670e75eb89918e50f75633ea9685613789b8f825c076e555804cda8d4e",
+  "date": "2026-07-01",
+  "pages": 742,
+  "day_headers": [
+   "07/01/2026"
+  ],
+  "june30_mentions": 92,
+  "status": "adjacent_support_only",
+  "june_purpose": "labelled support for June events only; no July extraction performed"
+ }
+}

@@ -1,0 +1,145 @@
+{
+ "ledger_id": "LANE4-TIMING-2026-10-19",
+ "phases": [
+  {
+   "run_id": "LANE2-OCR-2026-10-19-T1",
+   "attempt_id": null,
+   "source_path": "D:/12_projects/Innovex (ajeez)/03_Market-Intelligence/Morning-Reports-Jun-Aug/June morning reports for market intelligence/LMR06262026.pdf",
+   "source_sha256": "f88f93731fa3f7c81172381ccaa6bebb57a574996c8da0a66bc2a723556b458d",
+   "phase": "ocr_render_tesseract",
+   "utc_start": "2026-10-18T21:52:16.235767+00:00",
+   "utc_end": "2026-10-18T22:03:00.549463+00:00",
+   "wall_elapsed_s": 644.6,
+   "status": "ok",
+   "error": null,
+   "pages": 749,
+   "coverage": "749/749 ok, 0 empty, 0 failed",
+   "cache_hit": false,
+   "model": "tesseract 5.5.3.20260724 + eng (psm 6, 200 DPI, 8 workers)",
+   "tokens": null,
+   "measured_by": "cited: lane2-ocr/fullrun/run_meta.json (Lane-2 measured)"
+  },
+  {
+   "run_id": "LANE4-DVSCAN-2026-10-19-T1",
+   "attempt_id": null,
+   "source_path": "03_Market-Intelligence/Morning-Reports-Jun-Aug/June morning reports for market intelligence/LMR06262026.pdf",
+   "source_sha256": "f88f93731fa3f7c81172381ccaa6bebb57a574996c8da0a66bc2a723556b458d",
+   "phase": "extraction_dv_scan_ocr",
+   "utc_start": "2026-10-18T22:43:35.688249+00:00",
+   "utc_end": "2026-10-18T22:43:36.087220+00:00",
+   "wall_elapsed_s": 0.4,
+   "status": "ok",
+   "error": null,
+   "pages": 749,
+   "coverage": "749/749 OCR pages scanned; 124 DV-prefilter pages; 10 day-observations, 10 rig+well clusters",
+   "cache_hit": false,
+   "model": null,
+   "tokens": null,
+   "measured_by": "measured this lane (perf_counter)"
+  },
+  {
+   "run_id": "LANE4-JEV-2026-10-19-T1",
+   "attempt_id": null,
+   "source_path": "C:\\Users\\THinkPad\\AppData\\Local\\hermes\\cache\\scratch\\lane4-2026-10-19\\lane4-june26-raw.json",
+   "source_sha256": null,
+   "phase": "jev_adjudication_june26",
+   "utc_start": "2026-10-18T22:44:02.049898+00:00",
+   "utc_end": "2026-10-18T22:44:07.899779+00:00",
+   "wall_elapsed_s": 5.8,
+   "status": "ok",
+   "error": null,
+   "pages": null,
+   "coverage": "10/10 day-clusters adjudicated, 0 errors, workers=4",
+   "cache_hit": false,
+   "model": "jev-1.13.0",
+   "tokens": {
+    "input": 51002,
+    "output": 2364,
+    "cost_usd": 0.0021,
+    "rate": "USD 42 per 1B input tokens; output free"
+   },
+   "question_hash": "2bac1e428cb4d09628f68df609131da40ca46e6a024a781522f320fbf9b887c5",
+   "policy_hash": "3c802f5edcba79ddbd52c7a13a19b607ce725032cc185622e16d2e1687710177",
+   "schema_version": "dv-supplier-v4",
+   "state_version": "full-spans-v5",
+   "policy_version": "june-source-guard-v4",
+   "measured_by": "measured this lane (perf_counter + request_phase ledger)"
+  },
+  {
+   "run_id": "LANE4-JULY1-2026-10-19-T1",
+   "attempt_id": null,
+   "source_path": "D:\\12_projects\\Innovex (ajeez)\\03_Market-Intelligence\\Morning-Reports-Jun-Aug\\June morning reports for market intelligence\\LMR07012026.pdf",
+   "source_sha256": "bcbbd6670e75eb89918e50f75633ea9685613789b8f825c076e555804cda8d4e",
+   "phase": "extraction_july1_bounded_support",
+   "utc_start": null,
+   "utc_end": null,
+   "wall_elapsed_s": 5.5,
+   "status": "ok",
+   "error": null,
+   "pages": 742,
+   "coverage": "bounded: 14 DV hits scanned, 1 kept (8 in-scope rigs)",
+   "cache_hit": false,
+   "model": null,
+   "tokens": null,
+   "measured_by": "measured this lane (perf_counter)"
+  },
+  {
+   "run_id": "LANE4-RECON-R2-2026-10-19",
+   "attempt_id": null,
+   "source_path": "lane3-adjudicated.json + lane4-june26-adjudicated.json + workbook_reference_clean.json",
+   "source_sha256": null,
+   "phase": "reconciliation_round2",
+   "utc_start": null,
+   "utc_end": null,
+   "wall_elapsed_s": 1.3,
+   "status": "ok",
+   "error": null,
+   "pages": null,
+   "coverage": "131/131 rows dispositioned one-to-one",
+   "cache_hit": false,
+   "model": null,
+   "tokens": null,
+   "measured_by": "measured this lane (perf_counter, deterministic rerun)"
+  },
+  {
+   "run_id": "LANE3-JEV-2026-10-18 (corpus)",
+   "attempt_id": null,
+   "source_path": "lane3-events-v5.json",
+   "source_sha256": null,
+   "phase": "jev_adjudication_corpus",
+   "utc_start": null,
+   "utc_end": "2026-10-18T22:35:44.356678+00:00",
+   "wall_elapsed_s": 2120.4,
+   "status": "ok",
+   "error": null,
+   "pages": null,
+   "coverage": "257/257 clusters, 0 errors, workers=4; CONFIRMED 50/ADOPTED 3/REVIEW 116/NOT_A_RUN 87/CONFLICT 1",
+   "cache_hit": false,
+   "model": "jev-1.13.0",
+   "tokens": {
+    "input": 1614830,
+    "output": 60870,
+    "cost_usd": 0.0678
+   },
+   "measured_by": "cited: lane3-timings.jsonl adjudication_summary (Lane-3 measured)"
+  }
+ ],
+ "totals": {
+  "june26_increment_wall_s": 656.3,
+  "full_corpus_wall_s": 3305.0,
+  "full_corpus_note": "OCR 644.6 (measured) + text-PDF extraction ~540 (cited Lane-3 June-share estimate, NOT re-measured) + corpus Jev 2120.4 (measured)"
+ },
+ "target": {
+  "window_s": [
+   900,
+   1020
+  ],
+  "label": "15-17 min end-to-end"
+ },
+ "verdict": {
+  "june26_increment": "WITHIN target (~10.9 min): OCR dominates (644.6 s of 656.3 s)",
+  "full_corpus": "MISS target (~55.1 min vs 15-17 min): corpus Jev wall 2120.4 s alone exceeds the window; OCR adds 644.6 s",
+  "coverage": "OCR 749/749; 131/131 rows dispositioned; 88 matched (38 firm: 9 strict + 29 adjacent), 11 conflicting, 32 missing",
+  "accuracy": "firm matches 38/131 (29%); provisional matches 50/131 (38%); no-evidence rows 32/131 (24%), incl. 3 June-26 rows with zero live signal"
+ }
+}

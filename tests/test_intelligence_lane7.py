@@ -149,11 +149,103 @@ def main():
     check('q-links', all(q.get('range_view', '').startswith('GET /intelligence/')
                          for q in qlist))
 
+    # ---------------------------------------------------------- v2 re-point
+    v2 = intel.build_bundle_v2()
+    vsup = v2['suppliers']
+    check('v2-no-stale', 'stale' not in vsup and 'stale' not in v2['corrections'])
+    vcodes = {s['supplier_code']: s for s in vsup['suppliers']}
+    check('v2-ruled-counts',
+          {c: vcodes[c]['repeat_use']['observations'] for c in vcodes}
+          == {'WFD': 47, 'HAL': 39, 'FET': 26, 'TAM': 10},
+          str({c: vcodes[c]['repeat_use']['observations'] for c in vcodes}))
+    check('v2-first-dates',
+          vcodes['WFD']['first_observed']['date'] == '2026-06-01'
+          and vcodes['HAL']['first_observed']['date'] == '2026-06-01'
+          and vcodes['FET']['first_observed']['date'] == '2026-06-01'
+          and vcodes['TAM']['first_observed']['date'] == '2026-06-03')
+    check('v2-repeat-use',
+          vcodes['WFD']['repeat_use']['distinct_rigs'] == 41
+          and vcodes['WFD']['repeat_use']['distinct_wells'] == 42
+          and vcodes['HAL']['repeat_use']['distinct_rigs'] == 34
+          and vcodes['TAM']['repeat_use']['observations'] == 10)
+    check('v2-displays',
+          vcodes['WFD']['supplier_display'] == 'WEATHERFORD (WFD)'
+          and vcodes['HAL']['supplier_display'] == 'HALLIBURTON (HAL)'
+          and vcodes['FET']['supplier_display'] == 'FORUM ENERGY TECHNOLOGIES (FET)'
+          and vcodes['TAM']['supplier_display'] == 'TAM (TAM)'
+          and 'UNPROVEN' not in vcodes
+          and vsup['unproven_company_rows'] == 1)
+    check('v2-supplier-evidence',
+          vcodes['HAL']['first_observed']['source_file'] == 'LMR06012026.pdf'
+          and 'PHASE6-SHEET1-VERIFIED' in
+          (vcodes['HAL']['first_observed']['authority'] or ''))
+    check('v2-status-counts',
+          vsup['status_counts'] == {'COUNTED': 123, 'PENDING_FILE': 6,
+                                    'PENDING_RULING': 3, 'EXCLUDED': 3})
+    vcorr = v2['corrections']
+    check('v2-ruling', vcorr['ruling']['authority'] == 'Ajeez'
+          and vcorr['ruling']['date'] == '2026-10-20')
+    check('v2-applied',
+          len(vcorr['applied_corrections']) == 2
+          and {a['row'] for a in vcorr['applied_corrections']} == {65, 79}
+          and all(a['status'] == 'APPLIED' and a['history_preserved']
+                  for a in vcorr['applied_corrections']))
+    a65 = [a for a in vcorr['applied_corrections'] if a['row'] == 65][0]
+    a79 = [a for a in vcorr['applied_corrections'] if a['row'] == 79][0]
+    check('v2-applied-originals',
+          a65['original_sheet1'] == '9-5/8'
+          and a65['adjudicated_value'] == '13-3/8'
+          and a65['page']['file'] == 'LMR06162026.pdf'
+          and a79['original_sheet1'] == 'FET'
+          and a79['adjudicated_value'] == 'HAL'
+          and 'HALLIBURTON DV TOOL' in (a65['page_quote'] or ''))
+    check('v2-groups', len(vcorr['kept_at_tam']) == 3
+          and len(vcorr['restored_unique_jobs']) == 4
+          and len(vcorr['provisional_rows']) == 3
+          and len(vcorr['codified_rules']) == 2
+          and all(p['status'] == 'PROVISIONAL_PENDING_AJEEZ'
+                  for p in vcorr['provisional_rows']))
+    vrules = {r['code']: r for r in vcorr['alias_rules']}
+    check('v2-alias-reuse',
+          vrules.get('WFD', {}).get('display') == 'WEATHERFORD (WFD)'
+          and vrules.get('TAM', {}).get('display') == 'TAM (TAM)'
+          and vrules.get('TAM', {}).get('status') == 'needs-ajeez-confirmation')
+    check('v2-effort-honest',
+          vcorr['effort_metrics']['june_26_increment_s'] == 656.3
+          and 'no machine-observed' in vcorr['effort_metrics']['v2_note'])
+
     # ---------------------------------------------------------- static guards
     src = (PKG / 'dashboard' / 'intelligence.py').read_text(encoding='utf-8')
     for mod in ('socket', 'urllib', 'httpx', 'requests', 'smtplib',
                 'email.mime'):
         check('no-net-' + mod, 'import %s' % mod not in src)
+
+    # ---------------------------------------------------------- vendor fidelity
+    import hashlib as _hl
+    _proj = PKG.parent  # Innovex (ajeez): frozen project-tree inputs
+    _pairs = [
+        ('dv-june-adjudicated.json',
+         _proj / '06_Working-Notes' / 'dv-june-adjudicated.json'),
+        ('lane4-reconciliation-round2.json',
+         _proj / '06_Working-Notes' / 'reviews' / 'june-closeout-2026-10-19'
+         / 'lane4-reconciliation-round2.json'),
+        ('lane4-timing-ledger.json',
+         _proj / '06_Working-Notes' / 'reviews' / 'june-closeout-2026-10-19'
+         / 'lane4-timing-ledger.json'),
+        ('coverage-ledger.json',
+         _proj / '06_Working-Notes' / 'reviews'
+         / 'june-ocr-coverage-2026-10-19' / 'coverage-ledger.json'),
+        ('adjudication-table.json',
+         _proj / '06_Working-Notes' / 'reviews' / 'pipeline-v2-2026-10-19'
+         / 'phase7-ajeez-rulings' / 'adjudication-table.json'),
+    ]
+    for name, tree_path in _pairs:
+        vendored = PKG / 'data' / 'registers' / name
+        check('vendor-present-' + name, vendored.exists())
+        if vendored.exists() and tree_path.exists():
+            vh = _hl.md5(vendored.read_bytes()).hexdigest()
+            th = _hl.md5(tree_path.read_bytes()).hexdigest()
+            check('vendor-identical-' + name, vh == th, vh[:12])
 
     print('FAILURES: %s' % (fails if fails else 'none'))
     sys.exit(1 if fails else 0)

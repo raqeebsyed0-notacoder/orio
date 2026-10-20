@@ -1,0 +1,3932 @@
+{
+ "run_id": "LANE4-RECON-R2-2026-10-19",
+ "method": "one-to-one by Sno+Excel row; live clusters Lane-3 (257) + Lane-4 June-26 (10) + July-1 bounded support (1); NOT_A_RUN-only rows stay missing_evidence",
+ "counts": {
+  "rows": 131,
+  "matched": 88,
+  "conflicting": 11,
+  "missing_evidence": 32,
+  "proposed_correction": 3,
+  "additional_runs": 7
+ },
+ "diagnostics": {
+  "matched_strict": 9,
+  "matched_provisional_strict": 10,
+  "matched_provisional_adjacent": 31,
+  "matched_adjacent": 29,
+  "missing_only_not_a_run": 9,
+  "conflicting": 11,
+  "missing_no_candidate": 23,
+  "matched_provisional_near": 9
+ },
+ "matched": [
+  {
+   "sno": 1,
+   "excel_row": 2,
+   "date_rih": "2026-06-01",
+   "rig": "ADC-42L",
+   "well": "UTMN-3210",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06012026.pdf",
+    "sha256": "8bc5a898fc131b7e358259eb01af8dca154aa9279c4d0bef44a12f8aa46033ee",
+    "page": 84,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-01"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 2,
+   "excel_row": 3,
+   "date_rih": "2026-06-01",
+   "rig": "ADM-505",
+   "well": "ZULF-1483",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06012026.pdf",
+    "sha256": "8bc5a898fc131b7e358259eb01af8dca154aa9279c4d0bef44a12f8aa46033ee",
+    "page": 153,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-01"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 3,
+   "excel_row": 4,
+   "date_rih": "2026-06-01",
+   "rig": "ADM-687",
+   "well": "MRJN-801",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06012026.pdf",
+    "sha256": "8bc5a898fc131b7e358259eb01af8dca154aa9279c4d0bef44a12f8aa46033ee",
+    "page": 189,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-01"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 4,
+   "excel_row": 5,
+   "date_rih": "2026-06-01",
+   "rig": "SND-2017",
+   "well": "HRDH-2666",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06022026.pdf",
+    "sha256": "970a34c2a57b2c8d595240de9addcc781aef668cf6d3adfcdcc9daf3b9ee808b",
+    "page": 556,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-02"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 5,
+   "excel_row": 6,
+   "date_rih": "2026-06-01",
+   "rig": "SP-110",
+   "well": "FRHH-4",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06022026.pdf",
+    "sha256": "970a34c2a57b2c8d595240de9addcc781aef668cf6d3adfcdcc9daf3b9ee808b",
+    "page": 593,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-02"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 6,
+   "excel_row": 7,
+   "date_rih": "2026-06-01",
+   "rig": "SP-93",
+   "well": "THRY-561414",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06012026.pdf",
+    "sha256": "8bc5a898fc131b7e358259eb01af8dca154aa9279c4d0bef44a12f8aa46033ee",
+    "page": 673,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-01"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 7,
+   "excel_row": 8,
+   "date_rih": "2026-06-02",
+   "rig": "ADM-682",
+   "well": "ZULF-567",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06032026.pdf",
+    "sha256": "1686747c44568fa6b791854926297d882199276b398c54a11b3bdb457ebdb178",
+    "page": 174,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-03"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 8,
+   "excel_row": 9,
+   "date_rih": "2026-06-02",
+   "rig": "ADM-684",
+   "well": "MRJN-210",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06022026.pdf",
+    "sha256": "970a34c2a57b2c8d595240de9addcc781aef668cf6d3adfcdcc9daf3b9ee808b",
+    "page": 177,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-02"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 10,
+   "excel_row": 11,
+   "date_rih": "2026-06-02",
+   "rig": "KINGDOM-1",
+   "well": "MRJN-2052",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06022026.pdf",
+    "sha256": "970a34c2a57b2c8d595240de9addcc781aef668cf6d3adfcdcc9daf3b9ee808b",
+    "page": 322,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-02"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 11,
+   "excel_row": 12,
+   "date_rih": "2026-06-03",
+   "rig": "ARO-4001",
+   "well": "SFNY-1386",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06032026.pdf",
+    "sha256": "1686747c44568fa6b791854926297d882199276b398c54a11b3bdb457ebdb178",
+    "page": 226,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-03"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 13,
+   "excel_row": 14,
+   "date_rih": "2026-06-03",
+   "rig": "AD-75",
+   "well": "JNAB-122002",
+   "size": "9.625",
+   "company": "TAM",
+   "support": {
+    "file": "LMR06042026.pdf",
+    "sha256": "ffc49468d8b829c4057eeb2d6c1a0e3cc59817208d3baf94e6a53e33080f12a1",
+    "page": 30,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "TAM",
+    "jev_choice": "TAM (TAM)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-04"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 14,
+   "excel_row": 15,
+   "date_rih": "2026-06-03",
+   "rig": "KINGDOM-2",
+   "well": "ZULF-1512",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06052026.pdf",
+    "sha256": "456b72daddc12626487709763d15fc669d31b5763edf45e24a74a386dae51f5b",
+    "page": 326,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-05"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 15,
+   "excel_row": 16,
+   "date_rih": "2026-06-04",
+   "rig": "AD-78",
+   "well": "HZEM-491204",
+   "size": "9.625",
+   "company": "TAM",
+   "support": {
+    "file": "LMR06052026.pdf",
+    "sha256": "456b72daddc12626487709763d15fc669d31b5763edf45e24a74a386dae51f5b",
+    "page": 35,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "TAM",
+    "jev_choice": "TAM (TAM)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-05"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 17,
+   "excel_row": 18,
+   "date_rih": "2026-06-04",
+   "rig": "DQ-49L",
+   "well": "KHRS-3130",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06062026.pdf",
+    "sha256": "47f1478da20f377b179fa49359d1d2c0dae0d79da70f0fed2d300f2a843e1641",
+    "page": 253,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "ADOPTED",
+    "observed_size": "9.625",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-06"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 19,
+   "excel_row": 20,
+   "date_rih": "2026-06-04",
+   "rig": "SINO-43L",
+   "well": "KHRS-249",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06052026.pdf",
+    "sha256": "456b72daddc12626487709763d15fc669d31b5763edf45e24a74a386dae51f5b",
+    "page": 491,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-05"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 21,
+   "excel_row": 22,
+   "date_rih": "2026-06-04",
+   "rig": "SND-2019",
+   "well": "SDON-11",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06052026.pdf",
+    "sha256": "456b72daddc12626487709763d15fc669d31b5763edf45e24a74a386dae51f5b",
+    "page": 566,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-05"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 24,
+   "excel_row": 25,
+   "date_rih": "2026-06-05",
+   "rig": "SND-2015",
+   "well": "HRDH-2827",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06062026.pdf",
+    "sha256": "47f1478da20f377b179fa49359d1d2c0dae0d79da70f0fed2d300f2a843e1641",
+    "page": 542,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-06"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 25,
+   "excel_row": 26,
+   "date_rih": "2026-06-05",
+   "rig": "ADC-66L",
+   "well": "UTMN-2405",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06072026.pdf",
+    "sha256": "4334e75ccc39ef49a4fc282ad45a596817cc43646cfbf7ab2700bd7ca9d98ef3",
+    "page": 123,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-07"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 26,
+   "excel_row": 27,
+   "date_rih": "2026-06-05",
+   "rig": "DQ-47L",
+   "well": "KHRS-3115",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06072026.pdf",
+    "sha256": "4334e75ccc39ef49a4fc282ad45a596817cc43646cfbf7ab2700bd7ca9d98ef3",
+    "page": 247,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-07"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 27,
+   "excel_row": 28,
+   "date_rih": "2026-06-05",
+   "rig": "PN-11",
+   "well": "BRRI-1014",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06052026.pdf",
+    "sha256": "456b72daddc12626487709763d15fc669d31b5763edf45e24a74a386dae51f5b",
+    "page": 399,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-05"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 28,
+   "excel_row": 29,
+   "date_rih": "2026-06-07",
+   "rig": "AD-150",
+   "well": "ABSF-311",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06082026.pdf",
+    "sha256": "c0accb8fddda782ac5026f8c06d116837aaa3c8a4a175e03be939b300766ec9c",
+    "page": 8,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-08"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 30,
+   "excel_row": 31,
+   "date_rih": "2026-06-07",
+   "rig": "ADM-505",
+   "well": "ZULF-1485",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06082026.pdf",
+    "sha256": "c0accb8fddda782ac5026f8c06d116837aaa3c8a4a175e03be939b300766ec9c",
+    "page": 146,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-08"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 31,
+   "excel_row": 32,
+   "date_rih": "2026-06-07",
+   "rig": "ADM-685",
+   "well": "SFNY-1356",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06082026.pdf",
+    "sha256": "c0accb8fddda782ac5026f8c06d116837aaa3c8a4a175e03be939b300766ec9c",
+    "page": 175,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-08"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 32,
+   "excel_row": 33,
+   "date_rih": "2026-06-07",
+   "rig": "KINGDOM-2",
+   "well": "ZULF-1516",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06122026.pdf",
+    "sha256": "30fbd1fd17c3d193dd963284a26c313db2c075d30ab6e2520cf45eadcc868a21",
+    "page": 312,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "near",
+    "delta_days": 5,
+    "report_date": "2026-06-12"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 33,
+   "excel_row": 34,
+   "date_rih": "2026-06-08",
+   "rig": "SP-262",
+   "well": "JNAB-122204",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06082026.pdf",
+    "sha256": "c0accb8fddda782ac5026f8c06d116837aaa3c8a4a175e03be939b300766ec9c",
+    "page": 625,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-08"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 34,
+   "excel_row": 35,
+   "date_rih": "2026-06-08",
+   "rig": "ADC-23",
+   "well": "AJRM-2",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06092026.pdf",
+    "sha256": "5fbca363f4cdb6147b6c2db03fb8414569b238b6ed5d649889e537e0a21b6172",
+    "page": 69,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-09"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 37,
+   "excel_row": 38,
+   "date_rih": "2026-06-10",
+   "rig": "ADC-47",
+   "well": "HRDH-2661",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06102026-1_260610_064853.pdf",
+    "sha256": "ee16339762f9b3585350f849bd845d647f460b5ac3e801c87cf25b7178bc34f1",
+    "page": 88,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-10"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 38,
+   "excel_row": 39,
+   "date_rih": "2026-06-10",
+   "rig": "ADM-682",
+   "well": "ZULF-563",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 167,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": null,
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 39,
+   "excel_row": 40,
+   "date_rih": "2026-06-10",
+   "rig": "PA-218S",
+   "well": "MDRK-88",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 367,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 40,
+   "excel_row": 41,
+   "date_rih": "2026-06-10",
+   "rig": "SP-98",
+   "well": "SDGM-1285",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 672,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 41,
+   "excel_row": 42,
+   "date_rih": "2026-06-10",
+   "rig": "ADM-510",
+   "well": "MRJN-858",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 154,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 43,
+   "excel_row": 44,
+   "date_rih": "2026-06-11",
+   "rig": "AD-83",
+   "well": "UDYN-80",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06122026.pdf",
+    "sha256": "30fbd1fd17c3d193dd963284a26c313db2c075d30ab6e2520cf45eadcc868a21",
+    "page": 37,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "ADOPTED",
+    "observed_size": "9.625",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-12"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 6,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 44,
+   "excel_row": 45,
+   "date_rih": "2026-06-11",
+   "rig": "ADC-16",
+   "well": "HRDH-2668",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06152026.pdf",
+    "sha256": "3cbba20acfb3f47832a6006465851bcfc03edd3fe1311c47a59102479440a248",
+    "page": 60,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "near",
+    "delta_days": 4,
+    "report_date": "2026-06-15"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 45,
+   "excel_row": 46,
+   "date_rih": "2026-06-11",
+   "rig": "SND-2016",
+   "well": "HRDH-2618",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06122026.pdf",
+    "sha256": "30fbd1fd17c3d193dd963284a26c313db2c075d30ab6e2520cf45eadcc868a21",
+    "page": 558,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-12"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 46,
+   "excel_row": 47,
+   "date_rih": "2026-06-11",
+   "rig": "ADC-58L",
+   "well": "ABHD-190",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06132026.pdf",
+    "sha256": "89cbf927abda25df7cd9d734accaf31f0418e780fc4e9e1b43e300fb890a8571",
+    "page": 106,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-13"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 47,
+   "excel_row": 48,
+   "date_rih": "2026-06-12",
+   "rig": "SND-2012",
+   "well": "HRDH-2587",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 536,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": -1,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 48,
+   "excel_row": 49,
+   "date_rih": "2026-06-12",
+   "rig": "PN-11",
+   "well": "BRRI-1016",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 389,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": -1,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 49,
+   "excel_row": 50,
+   "date_rih": "2026-06-12",
+   "rig": "ADC-51",
+   "well": "UTMN-2401",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06122026.pdf",
+    "sha256": "30fbd1fd17c3d193dd963284a26c313db2c075d30ab6e2520cf45eadcc868a21",
+    "page": 92,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-12"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 50,
+   "excel_row": 51,
+   "date_rih": "2026-06-12",
+   "rig": "SINO-6L",
+   "well": "SDGM-1521",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06132026.pdf",
+    "sha256": "89cbf927abda25df7cd9d734accaf31f0418e780fc4e9e1b43e300fb890a8571",
+    "page": 515,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-13"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 52,
+   "excel_row": 53,
+   "date_rih": "2026-06-12",
+   "rig": "ADC-56L",
+   "well": "HRDH-2536",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06132026.pdf",
+    "sha256": "89cbf927abda25df7cd9d734accaf31f0418e780fc4e9e1b43e300fb890a8571",
+    "page": 104,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-13"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 54,
+   "excel_row": 55,
+   "date_rih": "2026-06-13",
+   "rig": "SND-2005",
+   "well": "FRAS-5",
+   "size": "18.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06152026.pdf",
+    "sha256": "3cbba20acfb3f47832a6006465851bcfc03edd3fe1311c47a59102479440a248",
+    "page": 526,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-15"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 57,
+   "excel_row": 58,
+   "date_rih": "2026-06-13",
+   "rig": "SND-2024",
+   "well": "HRDH-2667",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 583,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "near",
+    "delta_days": 6,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 59,
+   "excel_row": 60,
+   "date_rih": "2026-06-14",
+   "rig": "SINO-50L",
+   "well": "SDGM-1529",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06162026.pdf",
+    "sha256": "cf8e03c546fc88d1cccd6050228c221ccb9f05726db9b688667d83b4b40fea05",
+    "page": 501,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-16"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 60,
+   "excel_row": 61,
+   "date_rih": "2026-06-15",
+   "rig": "ADC-43L",
+   "well": "HWYH-1380",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06162026.pdf",
+    "sha256": "cf8e03c546fc88d1cccd6050228c221ccb9f05726db9b688667d83b4b40fea05",
+    "page": 82,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-16"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 61,
+   "excel_row": 62,
+   "date_rih": "2026-06-15",
+   "rig": "ADC-67L",
+   "well": "UTMN-3262",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06172026.pdf",
+    "sha256": "2263a524242571b47a5de8481b712009f00887975dfc323ac1277fa5e39c8d2f",
+    "page": 121,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-17"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "corroborated_by_jev"
+   },
+   "n_candidates_same_rigwell": 5,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 63,
+   "excel_row": 64,
+   "date_rih": "2026-06-15",
+   "rig": "DQ-48L",
+   "well": "UTMN-4803",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06162026.pdf",
+    "sha256": "cf8e03c546fc88d1cccd6050228c221ccb9f05726db9b688667d83b4b40fea05",
+    "page": 258,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-16"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 64,
+   "excel_row": 65,
+   "date_rih": "2026-06-15",
+   "rig": "NBR-575S",
+   "well": "RYDA-1",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06172026.pdf",
+    "sha256": "2263a524242571b47a5de8481b712009f00887975dfc323ac1277fa5e39c8d2f",
+    "page": 349,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "ADOPTED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-17"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 66,
+   "excel_row": 67,
+   "date_rih": "2026-06-16",
+   "rig": "ADC-46L",
+   "well": "UTMN-2414",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06172026.pdf",
+    "sha256": "2263a524242571b47a5de8481b712009f00887975dfc323ac1277fa5e39c8d2f",
+    "page": 85,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-17"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 67,
+   "excel_row": 68,
+   "date_rih": "2026-06-16",
+   "rig": "ADC-15",
+   "well": "HWYH-1506",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 58,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "near",
+    "delta_days": 3,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 68,
+   "excel_row": 69,
+   "date_rih": "2026-06-16",
+   "rig": "DPS-4",
+   "well": "TINT-88",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06182026.pdf",
+    "sha256": "fd66b1f9d4c1bbf369d2c40865e5dd2c89362fcce73702194ecbb539a3c0f8e2",
+    "page": 254,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-18"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 5,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 69,
+   "excel_row": 70,
+   "date_rih": "2026-06-16",
+   "rig": "DQ-47L",
+   "well": "KHRS-3115",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06172026.pdf",
+    "sha256": "2263a524242571b47a5de8481b712009f00887975dfc323ac1277fa5e39c8d2f",
+    "page": 250,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-17"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 70,
+   "excel_row": 71,
+   "date_rih": "2026-06-16",
+   "rig": "SND-2004",
+   "well": "QTIF-312",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06182026.pdf",
+    "sha256": "fd66b1f9d4c1bbf369d2c40865e5dd2c89362fcce73702194ecbb539a3c0f8e2",
+    "page": 532,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-18"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 72,
+   "excel_row": 73,
+   "date_rih": "2026-06-17",
+   "rig": "AD-150",
+   "well": "ABSF-312",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 8,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 73,
+   "excel_row": 74,
+   "date_rih": "2026-06-17",
+   "rig": "KINGDOM-2",
+   "well": "ZULF-1518",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06202026.pdf",
+    "sha256": "77df6ca8dc2e0adfe5e5c2032a5a913fe285543b222fe32036c46122346c91c9",
+    "page": 328,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "near",
+    "delta_days": 3,
+    "report_date": "2026-06-20"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 76,
+   "excel_row": 77,
+   "date_rih": "2026-06-17",
+   "rig": "M1212",
+   "well": "HRDH-5007",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 335,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 5,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 78,
+   "excel_row": 79,
+   "date_rih": "2026-06-18",
+   "rig": "SP-29",
+   "well": "HZEM-613202",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 659,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 80,
+   "excel_row": 81,
+   "date_rih": "2026-06-20",
+   "rig": "ADC-47",
+   "well": "HRDH-2661",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 89,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": -1,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 81,
+   "excel_row": 82,
+   "date_rih": "2026-06-21",
+   "rig": "AD-71",
+   "well": "HZEM-492614",
+   "size": "9.625",
+   "company": "TAM",
+   "support": {
+    "file": "LMR06222026.pdf",
+    "sha256": "58d3b81004f9b1132615bf115b67078285556fe5f98e17b7f7483c8b5ad7054d",
+    "page": 11,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "TAM",
+    "jev_choice": "TAM (TAM)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-22"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 82,
+   "excel_row": 83,
+   "date_rih": "2026-06-21",
+   "rig": "ADC-51",
+   "well": "UTMN-2401",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06222026.pdf",
+    "sha256": "58d3b81004f9b1132615bf115b67078285556fe5f98e17b7f7483c8b5ad7054d",
+    "page": 98,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-22"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 84,
+   "excel_row": 85,
+   "date_rih": "2026-06-21",
+   "rig": "ADM-505",
+   "well": "ZULF-1489",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06212026.pdf",
+    "sha256": "5a65d72ae82931c105894ca58ace1392d35a2dde425bc58dc0d689ea9143e0f0",
+    "page": 156,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-21"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 85,
+   "excel_row": 86,
+   "date_rih": "2026-06-21",
+   "rig": "NBR-633S",
+   "well": "HRDH-2754",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06222026.pdf",
+    "sha256": "58d3b81004f9b1132615bf115b67078285556fe5f98e17b7f7483c8b5ad7054d",
+    "page": 368,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-22"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 86,
+   "excel_row": 87,
+   "date_rih": "2026-06-21",
+   "rig": "ADM-681",
+   "well": "ABSF-241",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06222026.pdf",
+    "sha256": "58d3b81004f9b1132615bf115b67078285556fe5f98e17b7f7483c8b5ad7054d",
+    "page": 177,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-22"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 88,
+   "excel_row": 89,
+   "date_rih": "2026-06-22",
+   "rig": "CCF",
+   "well": "SFNY-1416",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06232026.pdf",
+    "sha256": "17ac6dc7d1e2e1eae87acb39a7ed273924ea26ed0e77f97708e3d39da4bcb768",
+    "page": 240,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-23"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 89,
+   "excel_row": 90,
+   "date_rih": "2026-06-22",
+   "rig": "ADM-682",
+   "well": "ZULF-566",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 174,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "near",
+    "delta_days": -3,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 91,
+   "excel_row": 92,
+   "date_rih": "2026-06-22",
+   "rig": "DQ-50L",
+   "well": "ANDR-1532",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06232026.pdf",
+    "sha256": "17ac6dc7d1e2e1eae87acb39a7ed273924ea26ed0e77f97708e3d39da4bcb768",
+    "page": 267,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-23"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 92,
+   "excel_row": 93,
+   "date_rih": "2026-06-22",
+   "rig": "SINO-46L",
+   "well": "SHYB-374",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06232026.pdf",
+    "sha256": "17ac6dc7d1e2e1eae87acb39a7ed273924ea26ed0e77f97708e3d39da4bcb768",
+    "page": 489,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-23"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 94,
+   "excel_row": 95,
+   "date_rih": "2026-06-23",
+   "rig": "ARO-4001",
+   "well": "SFNY-1389",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06252026.pdf",
+    "sha256": "1c854900b64ddf1bb22c54bd546b24666852693952914c05c276cd65a647a96e",
+    "page": 222,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-25"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 95,
+   "excel_row": 96,
+   "date_rih": "2026-06-23",
+   "rig": "AD-76",
+   "well": "HZEM-491012",
+   "size": "9.625",
+   "company": "TAM",
+   "support": {
+    "file": "LMR06232026.pdf",
+    "sha256": "17ac6dc7d1e2e1eae87acb39a7ed273924ea26ed0e77f97708e3d39da4bcb768",
+    "page": 25,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "TAM",
+    "jev_choice": "TAM (TAM)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-23"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 96,
+   "excel_row": 97,
+   "date_rih": "2026-06-23",
+   "rig": "ADC-16",
+   "well": "HRDH-2668",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06242026.pdf",
+    "sha256": "adc2fad0f158895857bcdfaa51cc2c1456abe32ae772939fa588bbde0bcba62c",
+    "page": 60,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-24"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 98,
+   "excel_row": 99,
+   "date_rih": "2026-06-24",
+   "rig": "AD-150",
+   "well": "ABSF-314",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06242026.pdf",
+    "sha256": "adc2fad0f158895857bcdfaa51cc2c1456abe32ae772939fa588bbde0bcba62c",
+    "page": 8,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-24"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 99,
+   "excel_row": 100,
+   "date_rih": "2026-06-24",
+   "rig": "NBR-304S",
+   "well": "HWYH-1372",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06242026.pdf",
+    "sha256": "adc2fad0f158895857bcdfaa51cc2c1456abe32ae772939fa588bbde0bcba62c",
+    "page": 347,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-24"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 102,
+   "excel_row": 103,
+   "date_rih": "2026-06-24",
+   "rig": "ADC-58L",
+   "well": "ABHD-190",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 112,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "near",
+    "delta_days": 4,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 103,
+   "excel_row": 104,
+   "date_rih": "2026-06-25",
+   "rig": "SP-260",
+   "well": "THRY-563204",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06252026.pdf",
+    "sha256": "1c854900b64ddf1bb22c54bd546b24666852693952914c05c276cd65a647a96e",
+    "page": 636,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-25"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_strict"
+  },
+  {
+   "sno": 105,
+   "excel_row": 106,
+   "date_rih": "2026-06-25",
+   "rig": "SINO-1L",
+   "well": "HRDH-1577",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06242026.pdf",
+    "sha256": "adc2fad0f158895857bcdfaa51cc2c1456abe32ae772939fa588bbde0bcba62c",
+    "page": 446,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": -1,
+    "report_date": "2026-06-24"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 106,
+   "excel_row": 107,
+   "date_rih": "2026-06-25",
+   "rig": "ADC-43L",
+   "well": "HWYH-1380",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06262026.pdf",
+    "sha256": "f88f93731fa3f7c81172381ccaa6bebb57a574996c8da0a66bc2a723556b458d",
+    "page": 83,
+    "op_span": [
+     868,
+     870
+    ],
+    "span_note": "op_span",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-26"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 109,
+   "excel_row": 110,
+   "date_rih": "2026-06-25",
+   "rig": "M1212",
+   "well": "HRDH-5007",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06212026.pdf",
+    "sha256": "5a65d72ae82931c105894ca58ace1392d35a2dde425bc58dc0d689ea9143e0f0",
+    "page": 334,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "near",
+    "delta_days": -4,
+    "report_date": "2026-06-21"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 5,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 112,
+   "excel_row": 113,
+   "date_rih": "2026-06-26",
+   "rig": "SND-2004",
+   "well": "QTIF-312",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 526,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 113,
+   "excel_row": 114,
+   "date_rih": "2026-06-26",
+   "rig": "SND-2021",
+   "well": "HRDH-2752",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06262026.pdf",
+    "sha256": "f88f93731fa3f7c81172381ccaa6bebb57a574996c8da0a66bc2a723556b458d",
+    "page": 566,
+    "op_span": [
+     384,
+     386
+    ],
+    "span_note": "op_span",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-26"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "corroborated_by_jev"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 114,
+   "excel_row": 115,
+   "date_rih": "2026-06-26",
+   "rig": "SND-2024",
+   "well": "HRDH-2667",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 583,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "near",
+    "delta_days": -7,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_near"
+  },
+  {
+   "sno": 116,
+   "excel_row": 117,
+   "date_rih": "2026-06-26",
+   "rig": "PA-218S",
+   "well": "MDRK-88",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06262026.pdf",
+    "sha256": "f88f93731fa3f7c81172381ccaa6bebb57a574996c8da0a66bc2a723556b458d",
+    "page": 378,
+    "op_span": [
+     2338,
+     2340
+    ],
+    "span_note": "op_span",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-26"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 117,
+   "excel_row": 118,
+   "date_rih": "2026-06-26",
+   "rig": "DQ-50L",
+   "well": "ANDR-1532",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 269,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 119,
+   "excel_row": 120,
+   "date_rih": "2026-06-26",
+   "rig": "ADC-56L",
+   "well": "HRDH-2536",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06262026.pdf",
+    "sha256": "f88f93731fa3f7c81172381ccaa6bebb57a574996c8da0a66bc2a723556b458d",
+    "page": 106,
+    "op_span": [
+     1462,
+     1464
+    ],
+    "span_note": "op_span",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-26"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "matched_provisional_strict"
+  },
+  {
+   "sno": 120,
+   "excel_row": 121,
+   "date_rih": "2026-06-26",
+   "rig": "SINO-10",
+   "well": "DARB-2",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 442,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "UNKNOWN",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "corroborated_by_jev"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 121,
+   "excel_row": 122,
+   "date_rih": "2026-06-26",
+   "rig": "ADC-67L",
+   "well": "UTMN-3262",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06252026.pdf",
+    "sha256": "1c854900b64ddf1bb22c54bd546b24666852693952914c05c276cd65a647a96e",
+    "page": 131,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": -1,
+    "report_date": "2026-06-25"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 5,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 122,
+   "excel_row": 123,
+   "date_rih": "2026-06-27",
+   "rig": "ADC-41L",
+   "well": "SDGM-1316",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 78,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": null,
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 123,
+   "excel_row": 124,
+   "date_rih": "2026-06-27",
+   "rig": "ADM-505",
+   "well": "ZULF-1488",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 156,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "matched_adjacent"
+  },
+  {
+   "sno": 124,
+   "excel_row": 125,
+   "date_rih": "2026-06-29",
+   "rig": "SINO-46L",
+   "well": "SHYB-374",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 496,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": -1,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_provisional_adjacent"
+  },
+  {
+   "sno": 126,
+   "excel_row": 127,
+   "date_rih": "2026-06-30",
+   "rig": "ADC-66L",
+   "well": "UTMN-2405",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 126,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": -2,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 4,
+   "disposition": "matched_provisional_adjacent"
+  }
+ ],
+ "conflicting": [
+  {
+   "sno": 12,
+   "excel_row": 13,
+   "date_rih": "2026-06-03",
+   "rig": "SND-2012",
+   "well": "HRDH-2587",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 536,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "far",
+    "delta_days": 8,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 20,
+   "excel_row": 21,
+   "date_rih": "2026-06-04",
+   "rig": "SINO-49",
+   "well": "HRDH-2460",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06052026.pdf",
+    "sha256": "456b72daddc12626487709763d15fc669d31b5763edf45e24a74a386dae51f5b",
+    "page": 501,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "4.5",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-05"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 29,
+   "excel_row": 30,
+   "date_rih": "2026-06-07",
+   "rig": "HP-702",
+   "well": "HZEM-613014",
+   "size": "9.625",
+   "company": "TAM",
+   "support": {
+    "file": "LMR06082026.pdf",
+    "sha256": "c0accb8fddda782ac5026f8c06d116837aaa3c8a4a175e03be939b300766ec9c",
+    "page": 273,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFLICT",
+    "observed_size": "9.625",
+    "observed_company": "TAM",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-08"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "company (jev_choice=FORUM ENERGY TECHNOLOGIES (FET) vs workbook TAM; code_owner retained)"
+   ]
+  },
+  {
+   "sno": 36,
+   "excel_row": 37,
+   "date_rih": "2026-06-10",
+   "rig": "SND-2002",
+   "well": "HRDH-5012",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06112026.pdf",
+    "sha256": "133dea160a9de13c6677be346cfad5495d1b9e85aed93190672b9ad9eb20142e",
+    "page": 505,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": null,
+    "observed_company": "HAL",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-11"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "unsupported",
+    "company": "MISMATCH(observed HAL)"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "company"
+   ]
+  },
+  {
+   "sno": 56,
+   "excel_row": 57,
+   "date_rih": "2026-06-13",
+   "rig": "PN-8",
+   "well": "SFNY-1076",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06152026.pdf",
+    "sha256": "3cbba20acfb3f47832a6006465851bcfc03edd3fe1311c47a59102479440a248",
+    "page": 409,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "5.5",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-15"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 12,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 65,
+   "excel_row": 66,
+   "date_rih": "2026-06-15",
+   "rig": "PN-11",
+   "well": "BRRI-1011",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06162026.pdf",
+    "sha256": "cf8e03c546fc88d1cccd6050228c221ccb9f05726db9b688667d83b4b40fea05",
+    "page": 393,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-16"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 75,
+   "excel_row": 76,
+   "date_rih": "2026-06-17",
+   "rig": "SP-26",
+   "well": "THRY-561814",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06182026.pdf",
+    "sha256": "fd66b1f9d4c1bbf369d2c40865e5dd2c89362fcce73702194ecbb539a3c0f8e2",
+    "page": 644,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "5.5",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-18"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 107,
+   "excel_row": 108,
+   "date_rih": "2026-06-25",
+   "rig": "SP-53L",
+   "well": "HRDH-2905",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06252026.pdf",
+    "sha256": "1c854900b64ddf1bb22c54bd546b24666852693952914c05c276cd65a647a96e",
+    "page": 667,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "18.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-25"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "corroborated_by_jev"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 110,
+   "excel_row": 111,
+   "date_rih": "2026-06-26",
+   "rig": "ADC-65L",
+   "well": "SDGM-1410",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 124,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "4.5",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 125,
+   "excel_row": 126,
+   "date_rih": "2026-06-30",
+   "rig": "ADC-64L",
+   "well": "HWYH-1376",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06302026.pdf",
+    "sha256": "5a8afc41d6ed56b24f479bdc091c4c19fadcbf4c74ef871f7dd23d3663503a8d",
+    "page": 119,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "18.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-30"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ]
+  },
+  {
+   "sno": 128,
+   "excel_row": 129,
+   "date_rih": "2026-06-30",
+   "rig": "NBR-633S",
+   "well": "HRDH-2754",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06222026.pdf",
+    "sha256": "58d3b81004f9b1132615bf115b67078285556fe5f98e17b7f7483c8b5ad7054d",
+    "page": 368,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "REVIEW",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "far",
+    "delta_days": -8,
+    "report_date": "2026-06-22"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "MISMATCH(observed HAL)"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size",
+    "company"
+   ]
+  }
+ ],
+ "missing_evidence": [
+  {
+   "sno": 9,
+   "excel_row": 10,
+   "date_rih": "2026-06-02",
+   "rig": "AD-150",
+   "well": "ABSF-313",
+   "size": "13.375",
+   "company": "FET",
+   "support": {
+    "file": "LMR06032026.pdf",
+    "sha256": "1686747c44568fa6b791854926297d882199276b398c54a11b3bdb457ebdb178",
+    "page": 9,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "13.375",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-03"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 16,
+   "excel_row": 17,
+   "date_rih": "2026-06-04",
+   "rig": "ADM-686",
+   "well": "MRJN-578",
+   "size": "13.375",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06042026.pdf",
+    "sha256": "ffc49468d8b829c4057eeb2d6c1a0e3cc59817208d3baf94e6a53e33080f12a1",
+    "page": 190,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-04"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 18,
+   "excel_row": 19,
+   "date_rih": "2026-06-04",
+   "rig": "SP-258",
+   "well": "HZEM-612812",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06052026.pdf",
+    "sha256": "456b72daddc12626487709763d15fc669d31b5763edf45e24a74a386dae51f5b",
+    "page": 626,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "9.625",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-05"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 22,
+   "excel_row": 23,
+   "date_rih": "2026-06-05",
+   "rig": "SINO-33L",
+   "well": "MZLJ-324",
+   "size": "9.625",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 23,
+   "excel_row": 24,
+   "date_rih": "2026-06-05",
+   "rig": "AD-72",
+   "well": "THRY-560412",
+   "size": "9.625",
+   "company": "TAM",
+   "support": {
+    "file": "LMR06062026.pdf",
+    "sha256": "47f1478da20f377b179fa49359d1d2c0dae0d79da70f0fed2d300f2a843e1641",
+    "page": 18,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "9.625",
+    "observed_company": "TAM",
+    "jev_choice": "TAM (TAM)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-06"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 35,
+   "excel_row": 36,
+   "date_rih": "2026-06-10",
+   "rig": "HP-707",
+   "well": "THRY-962202",
+   "size": "9.625",
+   "company": "TAM",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 42,
+   "excel_row": 43,
+   "date_rih": "2026-06-10",
+   "rig": "SND-2013",
+   "well": "HRDH-2466",
+   "size": "13.375",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 51,
+   "excel_row": 52,
+   "date_rih": "2026-06-12",
+   "rig": "AD-150",
+   "well": "ABSF-310",
+   "size": "13.375",
+   "company": "FET",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 53,
+   "excel_row": 54,
+   "date_rih": "2026-06-13",
+   "rig": "NBR-20",
+   "well": "HMYM-411214",
+   "size": "9.625",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 55,
+   "excel_row": 56,
+   "date_rih": "2026-06-13",
+   "rig": "SP-32",
+   "well": "THRY-562414",
+   "size": "9.625",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 58,
+   "excel_row": 59,
+   "date_rih": "2026-06-13",
+   "rig": "ADM-505",
+   "well": "ZULF-1487",
+   "size": "13.375",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 62,
+   "excel_row": 63,
+   "date_rih": "2026-06-15",
+   "rig": "ARO-4001",
+   "well": "SFNY-1009",
+   "size": "13.375",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 71,
+   "excel_row": 72,
+   "date_rih": "2026-06-17",
+   "rig": "V-108",
+   "well": "MNIF-575",
+   "size": "13.375",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 74,
+   "excel_row": 75,
+   "date_rih": "2026-06-17",
+   "rig": "SP-257",
+   "well": "THRY-961802",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06192026.pdf",
+    "sha256": "864feb3bd3c3ba212d9e28d1fc51e646a89be5970ce71fb9f07e2cea88921866",
+    "page": 631,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "9.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-19"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 77,
+   "excel_row": 78,
+   "date_rih": "2026-06-18",
+   "rig": "SP-27",
+   "well": "THRY-952404",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06182026.pdf",
+    "sha256": "fd66b1f9d4c1bbf369d2c40865e5dd2c89362fcce73702194ecbb539a3c0f8e2",
+    "page": 654,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "strict",
+    "delta_days": 0,
+    "report_date": "2026-06-18"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 79,
+   "excel_row": 80,
+   "date_rih": "2026-06-19",
+   "rig": "SND-2022",
+   "well": "HRDH-2646",
+   "size": "18.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06212026.pdf",
+    "sha256": "5a65d72ae82931c105894ca58ace1392d35a2dde425bc58dc0d689ea9143e0f0",
+    "page": 579,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "18.625",
+    "observed_company": "UNKNOWN",
+    "jev_choice": "NO-MATCH",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-21"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "unattested"
+   },
+   "n_candidates_same_rigwell": 3,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 83,
+   "excel_row": 84,
+   "date_rih": "2026-06-21",
+   "rig": "ADC-55",
+   "well": "UTMN-2411",
+   "size": "13.375",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 87,
+   "excel_row": 88,
+   "date_rih": "2026-06-21",
+   "rig": "SINO-46L",
+   "well": "SHYB-375",
+   "size": "13.375",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 90,
+   "excel_row": 91,
+   "date_rih": "2026-06-22",
+   "rig": "CH-1",
+   "well": "ABSF-170",
+   "size": "9.625",
+   "company": "FET",
+   "support": {
+    "file": "LMR06242026.pdf",
+    "sha256": "adc2fad0f158895857bcdfaa51cc2c1456abe32ae772939fa588bbde0bcba62c",
+    "page": 239,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "9.625",
+    "observed_company": "FET",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-24"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 93,
+   "excel_row": 94,
+   "date_rih": "2026-06-22",
+   "rig": "SND-2013",
+   "well": "HRDH-2466",
+   "size": "9.625",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 97,
+   "excel_row": 98,
+   "date_rih": "2026-06-23",
+   "rig": "T-218",
+   "well": "UTMN-4103",
+   "size": "9.625",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 100,
+   "excel_row": 101,
+   "date_rih": "2026-06-24",
+   "rig": "V-108",
+   "well": "MNIF-577",
+   "size": "13.375",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 101,
+   "excel_row": 102,
+   "date_rih": "2026-06-24",
+   "rig": "V-76",
+   "well": "ZULF-973",
+   "size": "13.375",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 104,
+   "excel_row": 105,
+   "date_rih": "2026-06-25",
+   "rig": "HP-704",
+   "well": "THRY-951402",
+   "size": "9.625",
+   "company": "TAM",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 108,
+   "excel_row": 109,
+   "date_rih": "2026-06-25",
+   "rig": "HP-705",
+   "well": "THRY-951014",
+   "size": "9.625",
+   "company": "TAM",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 111,
+   "excel_row": 112,
+   "date_rih": "2026-06-26",
+   "rig": "HP-706",
+   "well": "THRY-560804",
+   "size": "9.625",
+   "company": "TAM",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 115,
+   "excel_row": 116,
+   "date_rih": "2026-06-26",
+   "rig": "SP-306",
+   "well": "KRSN-179",
+   "size": "13.375",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 118,
+   "excel_row": 119,
+   "date_rih": "2026-06-26",
+   "rig": "SINO-35L",
+   "well": "BRRI-571",
+   "size": "13.375",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 127,
+   "excel_row": 128,
+   "date_rih": "2026-06-30",
+   "rig": "DPS-4",
+   "well": "TINT-88",
+   "size": "9.625",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06282026.pdf",
+    "sha256": "c183c3322af301179fca39ccaf3b6be7e87d46542b7092bf5ec205624210da2f",
+    "page": 253,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "NOT_A_RUN",
+    "observed_size": "9.625",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": -2,
+    "report_date": "2026-06-28"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 5,
+   "disposition": "missing_evidence",
+   "note": "only NOT_A_RUN-level evidence for rig+well"
+  },
+  {
+   "sno": 129,
+   "excel_row": 130,
+   "date_rih": "2026-06-30",
+   "rig": "NBR-783",
+   "well": "ZMLH-201",
+   "size": "13.375",
+   "company": "WFD",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 130,
+   "excel_row": 131,
+   "date_rih": "2026-06-30",
+   "rig": "AD-73",
+   "well": "THRY-921606",
+   "size": "9.625",
+   "company": "TAM",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  },
+  {
+   "sno": 131,
+   "excel_row": 132,
+   "date_rih": "2026-06-30",
+   "rig": "DQ-49L",
+   "well": "KHRS-3117",
+   "size": "13.375",
+   "company": "HAL",
+   "disposition": "missing_evidence",
+   "note": "no live cluster for rig+well in any scanned source"
+  }
+ ],
+ "proposed_correction": [
+  {
+   "sno": 29,
+   "excel_row": 30,
+   "date_rih": "2026-06-07",
+   "rig": "HP-702",
+   "well": "HZEM-613014",
+   "size": "9.625",
+   "company": "TAM",
+   "support": {
+    "file": "LMR06082026.pdf",
+    "sha256": "c0accb8fddda782ac5026f8c06d116837aaa3c8a4a175e03be939b300766ec9c",
+    "page": 273,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFLICT",
+    "observed_size": "9.625",
+    "observed_company": "TAM",
+    "jev_choice": "FORUM ENERGY TECHNOLOGIES (FET)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-08"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "match",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 1,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "company (jev_choice=FORUM ENERGY TECHNOLOGIES (FET) vs workbook TAM; code_owner retained)"
+   ],
+   "proposed_status": "proposed-human-review (never auto-applied)"
+  },
+  {
+   "sno": 56,
+   "excel_row": 57,
+   "date_rih": "2026-06-13",
+   "rig": "PN-8",
+   "well": "SFNY-1076",
+   "size": "13.375",
+   "company": "WFD",
+   "support": {
+    "file": "LMR06152026.pdf",
+    "sha256": "3cbba20acfb3f47832a6006465851bcfc03edd3fe1311c47a59102479440a248",
+    "page": 409,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "5.5",
+    "observed_company": "WFD",
+    "jev_choice": "WEATHERFORD (WFD)",
+    "date_relation": "adjacent",
+    "delta_days": 2,
+    "report_date": "2026-06-15"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 12,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ],
+   "proposed_status": "proposed-human-review (never auto-applied)"
+  },
+  {
+   "sno": 65,
+   "excel_row": 66,
+   "date_rih": "2026-06-15",
+   "rig": "PN-11",
+   "well": "BRRI-1011",
+   "size": "9.625",
+   "company": "HAL",
+   "support": {
+    "file": "LMR06162026.pdf",
+    "sha256": "cf8e03c546fc88d1cccd6050228c221ccb9f05726db9b688667d83b4b40fea05",
+    "page": 393,
+    "op_span": null,
+    "span_note": "context-only (op span unavailable)",
+    "verdict": "CONFIRMED",
+    "observed_size": "13.375",
+    "observed_company": "HAL",
+    "jev_choice": "HALLIBURTON (HAL)",
+    "date_relation": "adjacent",
+    "delta_days": 1,
+    "report_date": "2026-06-16"
+   },
+   "per_field": {
+    "rig": "match",
+    "well": "match",
+    "size": "MISMATCH",
+    "company": "match"
+   },
+   "n_candidates_same_rigwell": 2,
+   "disposition": "conflicting",
+   "mismatch_fields": [
+    "size"
+   ],
+   "proposed_status": "proposed-human-review (never auto-applied)"
+  }
+ ],
+ "additional_runs": [
+  {
+   "run_id": "RUN-0004",
+   "rig": "AD-83",
+   "well": "UDYN-80",
+   "size": "9.625",
+   "owner": "HAL",
+   "report_dates": [
+    "2026-06-18"
+   ],
+   "event_dates": [],
+   "observations": 1,
+   "verdicts": {
+    "CONFIRMED": 1
+   },
+   "continuous": true,
+   "members": [
+    "2026-06-18/AD-83/UDYN-80"
+   ]
+  },
+  {
+   "run_id": "RUN-0017",
+   "rig": "ARO-3002",
+   "well": "SFNY-1009",
+   "size": "13.375",
+   "owner": "WFD",
+   "report_dates": [
+    "2026-06-17",
+    "2026-06-18"
+   ],
+   "event_dates": [],
+   "observations": 2,
+   "verdicts": {
+    "CONFIRMED": 2
+   },
+   "continuous": true,
+   "members": [
+    "2026-06-17/ARO-3002/SFNY-1009",
+    "2026-06-18/ARO-3002/SFNY-1009"
+   ]
+  },
+  {
+   "run_id": "RUN-0042",
+   "rig": "SND-3002",
+   "well": "SDGM-1287",
+   "size": "9.625",
+   "owner": "WFD",
+   "report_dates": [
+    "2026-06-01"
+   ],
+   "event_dates": [
+    "2026-04-13"
+   ],
+   "observations": 1,
+   "verdicts": {
+    "CONFIRMED": 1
+   },
+   "continuous": true,
+   "members": [
+    "2026-06-01/SND-3002/SDGM-1287"
+   ]
+  },
+  {
+   "run_id": "RUN-0047",
+   "rig": "SP-31",
+   "well": "THRY-561614",
+   "size": "9.625",
+   "owner": "FET",
+   "report_dates": [
+    "2026-06-11"
+   ],
+   "event_dates": [],
+   "observations": 1,
+   "verdicts": {
+    "CONFIRMED": 1
+   },
+   "continuous": true,
+   "members": [
+    "2026-06-11/SP-31/THRY-561614"
+   ]
+  },
+  {
+   "run_id": "RUN-0049",
+   "rig": "SP-99",
+   "well": "HZEM-613402",
+   "size": "9.625",
+   "owner": "HAL",
+   "report_dates": [
+    "2026-06-20"
+   ],
+   "event_dates": [],
+   "observations": 1,
+   "verdicts": {
+    "CONFIRMED": 1
+   },
+   "continuous": true,
+   "members": [
+    "2026-06-20/SP-99/HZEM-613402"
+   ]
+  },
+  {
+   "run_id": "RUN-0050",
+   "rig": "V108",
+   "well": "MNIF-577",
+   "size": "13.375",
+   "owner": "WFD",
+   "report_dates": [
+    "2026-06-25"
+   ],
+   "event_dates": [],
+   "observations": 1,
+   "verdicts": {
+    "CONFIRMED": 1
+   },
+   "continuous": true,
+   "members": [
+    "2026-06-25/V108/MNIF-577"
+   ],
+   "rig_id_note": "block-header attribution unverified (Lane-3 false-rig class); needs Ajeez/source confirmation before use"
+  },
+  {
+   "run_id": "RUN-0051",
+   "rig": "V76",
+   "well": "ZULF-973",
+   "size": "13.375",
+   "owner": "WFD",
+   "report_dates": [
+    "2026-06-25"
+   ],
+   "event_dates": [],
+   "observations": 1,
+   "verdicts": {
+    "CONFIRMED": 1
+   },
+   "continuous": true,
+   "members": [
+    "2026-06-25/V76/ZULF-973"
+   ],
+   "rig_id_note": "block-header attribution unverified (Lane-3 false-rig class); needs Ajeez/source confirmation before use"
+  }
+ ]
+}

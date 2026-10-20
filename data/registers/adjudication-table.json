@@ -1,0 +1,217 @@
+{
+  "schema": "ajeez-adjudication/v1",
+  "title": "June DV market intelligence - adjudication table under Ajeez's rulings",
+  "ruling_date": "2026-10-20",
+  "ruling_authority": "Ajeez",
+  "basis": {
+    "rows": 107,
+    "source": "phase6/June-DV-Verified-2026-10-19.xlsx",
+    "source_sheet": "Verified June jobs",
+    "values_are": "Ajeez's own values, verbatim from Sheet 1",
+    "frozen_inputs_untouched": true
+  },
+  "codified_rules": [
+    {
+      "id": "RULE-1-COMPANY-IS-TOOL-BRAND",
+      "rule": "Company is the tool brand. Where a page names a tool brand (e.g. TAM) and separately carries a work marking naming a contractor (e.g. FET in a Resp. Co cell), the tool brand governs.",
+      "authority_rows": [111, 15, 29],
+      "ruling": "Ajeez kept TAM on all three rows",
+      "applied_to_rows": [111, 15, 29],
+      "applied_provisionally_to_rows": [23, 35, 77]
+    },
+    {
+      "id": "RULE-2-JOB-KEY-RIG-WELL-SIZE",
+      "rule": "A unique job is keyed by rig + well + tool size. Two jobs on one rig and well with different tool sizes are two jobs, not duplicates.",
+      "authority_rows": [60, 85, 106, 128],
+      "ruling": "Ajeez ruled all four are unique jobs",
+      "replaces": "old dedup key rig + well + date pattern",
+      "restored_rows": [60, 106, 128]
+    }
+  ],
+  "accepted_corrections": [
+    {
+      "row": 65,
+      "field": "size",
+      "sheet1_value": "9-5/8",
+      "adjudicated_value": "13-3/8",
+      "job": {"rig": "PN-11", "well": "BRRI-1011", "rih_date": "2026-06-15", "company": "HAL", "offshore_onshore": "offshore"},
+      "page": {"file": "LMR06162026.pdf", "page": 393, "report_date": "2026-06-16"},
+      "page_quote": "2345 - 0045 | 1 | 0 | 16 | N | CSG | RCSG | DV | HDV | 3899 3899 | HPJSM, M/UP AND RIH 13-3/8 HALLIBURTON DV TOOL.",
+      "episode": {"episode_id": "EP-PN11-BRRI-1011", "size": "13.375", "size_provenance": "op-row", "company": "HAL"},
+      "status": "APPLIED"
+    },
+    {
+      "row": 79,
+      "field": "company",
+      "sheet1_value": "FET",
+      "adjudicated_value": "HAL",
+      "job": {"rig": "SND-2022", "well": "HRDH-2646", "rih_date": "2026-06-19", "size": "18-5/8", "offshore_onshore": "onshore"},
+      "pages": [
+        {"file": "LMR06202026.pdf", "page": 582, "report_date": "2026-06-20"},
+        {"file": "LMR06202026.pdf", "page": 579, "report_date": "2026-06-20"}
+      ],
+      "page_quote": "p582: HPJSM, P/U & M/U 18-5/8 HALL 3K DV TOOL AND CAREFULLY PASS THROUGH BOP & WELLHEAD. - HALL 3K DV TOOL SN: TSN-11292. | p579: DROP HALL DV OPENING BOMB, INFLATE PACKER AT 400 PSI AND OPEN DV PORTS WITH 1680 PSI AS PER HALL REP.",
+      "episode": {"episode_id": "EP-SND2022-HRDH-2646", "size": "18.625", "size_provenance": "op-row", "company": "HAL"},
+      "note": "Sheet 1 keeps Ajeez's written value FET verbatim; correction applies to totals only.",
+      "status": "APPLIED"
+    }
+  ],
+  "kept_at_tam": [
+    {"row": 111, "job": {"rig": "HP-706", "well": "THRY-560804"}, "sheet1_company": "TAM", "page": {"file": "LMR06262026.pdf", "page": 299, "report_date": "2026-06-26"}, "work_marking": "CSG RCSG DV FET", "tool_brand": "P/U AND M/U TAM 9-5/8 HYDRAULIC ISOL", "ruling": "TAM stands"},
+    {"row": 15, "job": {"rig": "AD-78", "well": "HZEM-491204"}, "sheet1_company": "TAM", "page": {"file": "LMR06052026.pdf", "page": 35, "report_date": "2026-06-05"}, "work_marking": "CSG RCSG DV FET", "tool_brand": "P/U AND M/U TAM 9-5/8 DV ASSEMBLY AS PER DV ENGINEER", "ruling": "TAM stands"},
+    {"row": 29, "job": {"rig": "HP-702", "well": "HZEM-613014"}, "sheet1_company": "TAM", "page": {"file": "LMR06082026.pdf", "page": 273, "report_date": "2026-06-08"}, "work_marking": "CSG RCSG DV FET", "tool_brand": "P/U, M/U AND RIH TAM DV TOOL", "ruling": "TAM stands"}
+  ],
+  "restored_unique_jobs": [
+    {
+      "row": 60,
+      "job": {"rig": "ADC-43L", "well": "HWYH-1380", "rih_date": "2026-06-16"},
+      "size": "13-3/8",
+      "size_provenance": "op-row",
+      "company": "UNPROVEN",
+      "company_note": "No competitor brand token on the page. HALLIBURTON SPECIALIST is crew supervision; HDV is the Aramco report header. Workbook value HAL is NOT used.",
+      "offshore_onshore": "onshore",
+      "page": {"file": "LMR06162026.pdf", "pages": [82, 83], "report_date": "2026-06-16"},
+      "page_quote": "p82: 0730 - 0830 CSG RCSG DV HDV M/U 13 3/8 ASSEMBLY (BOTTOM PUP JT + DV TOOL + TOP PUP JT) AS PER HALLIBURTON SPECIALIST. / * DV @ 2600 FT. | p83: DROP FREE FALL OPENING CONE. WAITED TO LAND IN DV TOOL. / PERFORMED 13-3/8 CSG 2ND STAGE CMT JOB / - DROPPED DV CLOSING PLUG.",
+      "distinctness": "13-3/8 vs row 106's 9-5/8 on same rig+well -> unique job",
+      "episode": {"episode_id": "EP-ADC43L-HWYH-1380", "size": "13.375", "size_provenance": "same-string-adjacent", "company": null},
+      "status": "COUNTED_IN_SIZE_VARIANT_ONLY"
+    },
+    {
+      "row": 106,
+      "job": {"rig": "ADC-43L", "well": "HWYH-1380", "rih_date": "2026-06-26"},
+      "size": "9-5/8",
+      "size_provenance": "page-phrase (same-string; no 9-5/8 figure inside the DV row itself)",
+      "company": "UNPROVEN",
+      "company_note": "Only token in the DV row is WDV, an Aramco Resp. Co abbreviation. Per Rule 1 a Resp. Co marking is not a tool brand; no tool brand is named on the page. WDV is NOT promoted to WFD.",
+      "offshore_onshore": "onshore",
+      "page": {"file": "LMR06262026.pdf", "page": 83, "report_date": "2026-06-26"},
+      "page_quote": "2215-2245 0.5 0 12,02N CSG RCSG DV WDV 8721 8721 FT. MIU DV ASSEMBLY (PUP JT + DV TOOL + PUP JT), RIH FRO! ... + WED SUPERVISION. | RIH 9 5/8 CSG FROM 4355 FT TO 4680 FT.- (13-3/8 SHOE)",
+      "distinctness": "9-5/8 vs row 60's 13-3/8 on same rig+well -> unique job",
+      "status": "COUNTED_IN_SIZE_VARIANT_ONLY"
+    },
+    {
+      "row": 85,
+      "job": {"rig": "NBR-633S", "well": "HRDH-2754", "rih_date": "2026-06-21"},
+      "size": "13-3/8",
+      "size_provenance": "op-row",
+      "company": "HAL",
+      "company_provenance": "op-row",
+      "offshore_onshore": "onshore",
+      "page": {"file": "LMR06212026.pdf", "page": 372, "report_date": "2026-06-21"},
+      "page_quote": "P/U 13-3/8 3K HALL DV WITH M/U PJS.",
+      "episode": {"episode_id": "EP-NBR633S-HRDH-2754", "size": "13.375", "size_provenance": "op-row", "company": "HAL"},
+      "note": "Already inside Sheet 1's 107; listed because Rule 2 makes row 128 its neighbour, not its duplicate.",
+      "status": "ALREADY_COUNTED"
+    },
+    {
+      "row": 128,
+      "job": {"rig": "NBR-633S", "well": "HRDH-2754", "rih_date": "2026-06-30"},
+      "size": "9-5/8",
+      "size_provenance": "op-row",
+      "company": "WFD",
+      "company_provenance": "op-row",
+      "offshore_onshore": "onshore",
+      "pages": [
+        {"file": "LMR06302026.pdf", "page": 370, "report_date": "2026-06-30"},
+        {"file": "LMR07012026.pdf", "page": 360, "report_date": "2026-07-01"}
+      ],
+      "page_quote": "p370: RUN 9-5/8 CSG WITH WFD 10K DV, CIRC, CMT IN 2 STG'S. | p360: PJSM: PU/MU 9-5/8 WEATHERFORD 10K DV AS PER WFD REP. / DROP WFD DV OPENING BOMB PLUG. ALLOW SAME TO GRAVITATE, SET AND INFLATE WFD DV PKR W/ 2000 PSI & OPEN DV PORTS W/ 2400 PSI.",
+      "distinctness": "9-5/8 vs row 85's 13-3/8 on same rig+well -> unique job",
+      "status": "COUNTED_IN_BOTH_VARIANTS"
+    }
+  ],
+  "provisional_rows": [
+    {
+      "row": 23,
+      "job": {"rig": "AD-72", "well": "THRY-560412"},
+      "sheet1_company": "TAM",
+      "page": {"file": "LMR06062026.pdf", "page": 18, "report_date": "2026-06-06"},
+      "tool_brand": "TAM DV TOOL",
+      "work_marking": "Resp HDV",
+      "provisional_disposition": "TAM",
+      "episode": {"episode_id": "EP-AD72-THRY-560412", "size": "9.625", "size_provenance": "op-row", "company": "TAM"},
+      "status": "PROVISIONAL_PENDING_AJEEZ"
+    },
+    {
+      "row": 35,
+      "job": {"rig": "HP-707", "well": "THRY-962202"},
+      "sheet1_company": "TAM",
+      "page": {"file": "LMR06102026-1_260610_064853.pdf", "page": 290, "report_date": "2026-06-10"},
+      "tool_brand": "TAM engineer witnesses plugs",
+      "work_marking": "SLB cement crew",
+      "provisional_disposition": "TAM",
+      "episode": {"episode_id": "EP-HP707-THRY-962202", "size": "9.625", "size_provenance": "op-row", "company": null},
+      "status": "PROVISIONAL_PENDING_AJEEZ"
+    },
+    {
+      "row": 77,
+      "job": {"rig": "SP-27", "well": "THRY-952404"},
+      "sheet1_company": "WFD",
+      "pages": [
+        {"file": "LMR06182026.pdf", "page": 654, "report_date": "2026-06-18"},
+        {"file": "LMR06192026.pdf", "page": 653, "report_date": "2026-06-19"}
+      ],
+      "tool_brand": "WFD 9-5/8 DV ASSEMBLY AS PER DV ENGINEER (p654); BUMPED PLUG & CLOSED DV PORTS ... AS PER WFD DV ENGINEER (p653)",
+      "work_marking": "CSG RCSG DV FET (p654 Resp. Co cell)",
+      "provisional_disposition": "WFD",
+      "episode": {"episode_id": "EP-SP27-THRY-952404", "size": "9.625", "size_provenance": "op-row", "company": "FET", "company_conflict": true, "company_candidates": ["FET", "WFD"], "page_company_observed": "WFD"},
+      "flip_effect": "If Ajeez rules FET: FET +1, WFD -1 in the company table.",
+      "status": "PROVISIONAL_PENDING_AJEEZ"
+    }
+  ],
+  "totals": {
+    "base": {
+      "n": 107,
+      "by_company": {"WFD": 41, "HAL": 32, "FET": 26, "TAM": 8},
+      "by_size": {"9-5/8": 56, "13-3/8": 49, "18-5/8": 2},
+      "by_location": {"onshore": 77, "offshore": 30}
+    },
+    "actual": {
+      "definition": "107 Sheet-1 rows + accepted corrections only (row 65 size, row 79 company)",
+      "n": 107,
+      "by_company": {"WFD": 41, "HAL": 33, "FET": 25, "TAM": 8},
+      "by_size": {"9-5/8": 55, "13-3/8": 50, "18-5/8": 2},
+      "by_location": {"onshore": 77, "offshore": 30},
+      "company_x_size": {
+        "WFD": {"9-5/8": 25, "13-3/8": 15, "18-5/8": 1, "total": 41},
+        "HAL": {"9-5/8": 10, "13-3/8": 22, "18-5/8": 1, "total": 33},
+        "FET": {"9-5/8": 12, "13-3/8": 13, "18-5/8": 0, "total": 25},
+        "TAM": {"9-5/8": 8, "13-3/8": 0, "18-5/8": 0, "total": 8}
+      },
+      "arithmetic": {
+        "company": "BASE WFD 41 + HAL 32 + FET 26 + TAM 8 = 107 | ACTUAL WFD 41 + HAL (32+1) + FET (26-1) + TAM 8 = 107",
+        "size": "BASE 9-5/8 56 + 13-3/8 49 + 18-5/8 2 = 107 | ACTUAL 9-5/8 (56-1) + 13-3/8 (49+1) + 18-5/8 2 = 107"
+      }
+    },
+    "provisional": {
+      "definition": "ACTUAL + Rule-2 unique jobs 60, 85, 106, 128 counted where proven. 85 and 128 fully proven; 60 and 106 have a proven size but UNPROVEN company, so they are counted in the size table only.",
+      "n": 110,
+      "by_company": {"WFD": 42, "HAL": 33, "FET": 25, "TAM": 8, "UNPROVEN": 2},
+      "by_company_counted": {"WFD": 42, "HAL": 33, "FET": 25, "TAM": 8},
+      "by_size": {"9-5/8": 57, "13-3/8": 51, "18-5/8": 2},
+      "by_location": {"onshore": 80, "offshore": 30},
+      "company_x_size": {
+        "WFD": {"9-5/8": 26, "13-3/8": 15, "18-5/8": 1, "total": 42},
+        "HAL": {"9-5/8": 10, "13-3/8": 22, "18-5/8": 1, "total": 33},
+        "FET": {"9-5/8": 12, "13-3/8": 13, "18-5/8": 0, "total": 25},
+        "TAM": {"9-5/8": 8, "13-3/8": 0, "18-5/8": 0, "total": 8},
+        "UNPROVEN": {"9-5/8": 1, "13-3/8": 1, "18-5/8": 0, "total": 2}
+      },
+      "arithmetic": {
+        "company": "BASE WFD 41 + HAL 32 + FET 26 + TAM 8 = 107 | ACTUAL WFD 41 + HAL 33 + FET 25 + TAM 8 = 107 | PROV WFD (41+1) + HAL 33 + FET 25 + TAM 8 = 110",
+        "size": "BASE 9-5/8 56 + 13-3/8 49 + 18-5/8 2 = 107 | ACTUAL 9-5/8 55 + 13-3/8 50 + 18-5/8 2 = 107 | PROV 9-5/8 (55+2) + 13-3/8 (50+1) + 18-5/8 2 = 110",
+        "location": "onshore 77 + 60 + 106 + 128 = 80; offshore unchanged 30"
+      }
+    },
+    "excluded_from_all_totals": {
+      "provisional_pending_ajeez": [23, 35, 77],
+      "held_out_unproven": [21, 88, 117, 71, 118],
+      "not_found_missing_report_files": [51, 53, 58, 115, 125, 130, 131],
+      "innovex_own_out_of_competitor_scope": 13
+    }
+  },
+  "files": {
+    "markdown": "phase7-ajeez-rulings/adjudication-table.md",
+    "json": "phase7-ajeez-rulings/adjudication-table.json"
+  }
+}

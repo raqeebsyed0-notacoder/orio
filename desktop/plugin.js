@@ -1247,7 +1247,7 @@ function MarketIntelView() {
   const needle = fText.toUpperCase()
   const rows = useMemo(() => allRows.filter(r =>
     !needle || (textOf(r.date) + ' ' + textOf(r.rig) + ' ' + textOf(r.well) + ' ' +
-      textOf(r.size) + ' ' + textOf(r.company) + ' ' + textOf(r.location) + ' ' +
+      textOf(r.size) + ' ' + textOf(r.company) + ' ' + textOf(r.company_display) + ' ' + textOf(r.location) + ' ' +
       textOf(r.status) + ' ' + textOf(r.remarks)).toUpperCase().includes(needle)
   ), [allRows, needle])
   const total = (q.data && q.data.total) || 0
@@ -1324,7 +1324,7 @@ function MarketIntelView() {
               value: fCo || 'all',
               onChange: v => setFCo(v === 'all' ? '' : v),
               options: [{ id: 'all', label: 'All' }].concat(
-                byCo.map(c => ({ id: c.company, label: c.company })))
+                byCo.map(c => ({ id: c.company, label: c.company_display || c.company })))
             }),
             jsx(SegmentedControl, {
               value: fProv || 'all',
@@ -1450,7 +1450,7 @@ function MarketIntelView() {
                                 jsx('td', { children: jsx('strong', { children: r.rig }) }),
                                 jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.well }) }),
                                 jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: sizeLbl(r.size) }) }),
-                                jsx('td', { children: jsx(Pill, { status: r.company }) }),
+                                jsx('td', { children: jsx('span', { className: `${ID}-mono`, children: r.company_display || r.company }) }),
                                 jsx('td', { children: r.location ? textOf(r.location) : jsx('span', { className: `${ID}-dim`, children: 'n/a' }) }),
                                 jsx('td', { children: r.status ? jsx('span', { className: `${ID}-pill`, children: textOf(r.status) }) : jsx('span', { className: `${ID}-dim`, children: 'n/a' }) }),
                                 jsx('td', { children: textOf(r.remarks) || jsx('span', { className: `${ID}-dim`, children: 'None' }) }),
@@ -1517,7 +1517,7 @@ function MarketIntelView() {
                           className: `${ID}-barrow`, key: x.size + x.company,
                           onClick: () => { setFSize(x.size); setFCo(x.company) },
                           children: [
-                            jsx('span', { className: `${ID}-barname`, children: sizeLbl(x.size) + ' ' + x.company }),
+                            jsx('span', { className: `${ID}-barname`, children: sizeLbl(x.size) + ' ' + (x.company_display || x.company) }),
                             jsx('span', {
                               className: `${ID}-bar`, style: { width: (x.n / maxSC * 100) + '%' }
                             }),
@@ -1536,7 +1536,7 @@ function MarketIntelView() {
                           className: `${ID}-barrow`, key: c.company,
                           onClick: () => setFCo(c.company),
                           children: [
-                            jsx('span', { className: `${ID}-barname`, children: c.company + ' ' + pct(c.share) }),
+                            jsx('span', { className: `${ID}-barname`, children: (c.company_display || c.company) + ' ' + pct(c.share) }),
                             jsx('span', { className: `${ID}-bar`, style: { width: (c.n / Math.max(1, ...byCo.map(y => y.n)) * 100) + '%' } }),
                             jsx('span', { className: `${ID}-barnum`, children: String(c.n) })
                           ]

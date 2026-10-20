@@ -19,15 +19,27 @@ cp "$REPO/desktop/plugin.js"          "$PLUGINS/desktop/plugin.js"
 cp "$REPO/dashboard/plugin_api.py"    "$PLUGINS/dashboard/plugin_api.py"
 cp "$REPO/dashboard/channels.py"      "$PLUGINS/dashboard/channels.py"
 cp "$REPO/dashboard/clients.py"       "$PLUGINS/dashboard/clients.py"
+cp "$REPO/dashboard/intelligence.py"  "$PLUGINS/dashboard/intelligence.py"
 cp "$REPO/dashboard/manifest.json"    "$PLUGINS/dashboard/manifest.json"
 cp "$REPO/plugin.yaml"                "$PLUGINS/plugin.yaml"
 for f in build_db.py ingest_mr.py ingest_tracker.py ingest_matrix.py ingest_adjudicated.py jev_consume.py \
-         mr_index.json seed_cases.json company_aliases.json; do
+         mr_index.json seed_cases.json company_aliases.json intelligence_questions.json; do
   [ -f "$REPO/data/$f" ] && cp "$REPO/data/$f" "$PLUGINS/data/$f"
+done
+mkdir -p "$PLUGINS/data/registers"
+for f in dv-june-adjudicated.json lane4-reconciliation-round2.json lane4-timing-ledger.json coverage-ledger.json adjudication-table.json; do
+  [ -f "$REPO/data/registers/$f" ] && cp "$REPO/data/registers/$f" "$PLUGINS/data/registers/$f"
 done
 mkdir -p "$PLUGINS/data/ingested/matrix/_retired-v1"
 cp "$REPO/data/ingested/matrix/June2026-adjudicated-v2.json" "$PLUGINS/data/ingested/matrix/" 2>/dev/null || true
 cp "$REPO/data/ingested/matrix/_retired-v1/"* "$PLUGINS/data/ingested/matrix/_retired-v1/" 2>/dev/null || true
+# The stale v1 workbook (June2026.json, 131 hand-built rows) was retired
+# upstream to data/ingested/matrix/_retired-v1/ (lineage README there).
+# A leftover top-level copy in the installed tree would load into a
+# gateway-side build — remove it once the retired copy is in place.
+if [ -f "$PLUGINS/data/ingested/matrix/_retired-v1/June2026.json" ]; then
+  rm -f "$PLUGINS/data/ingested/matrix/June2026.json"
+fi
 
 echo "== syncing repo tests -> plugins/tests =="
 mkdir -p "$PLUGINS/tests"

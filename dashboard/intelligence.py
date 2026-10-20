@@ -17,14 +17,24 @@ company-alias map. This module:
 - preserves reviewer-correction originals beside proposals (history is
   never overwritten) and reports effort metrics as observed.
 
-Source registers (frozen, read-only — never edited here):
-  06_Working-Notes/dv-june-adjudicated.json              (691 day-events, Jun-Aug)
-  06_Working-Notes/reviews/june-closeout-2026-10-19/
-      lane4-reconciliation-round2.json                   (131 rows: 88/11/32/3/7)
-      lane4-accepted-corrected.json / lane4-provisional-corrected.json
-      lane4-timing-ledger.json
-  06_Working-Notes/reviews/june-ocr-coverage-2026-10-19/coverage-ledger.json
-  data/company_aliases.json                              (confirmed display map)
+Source registers (vendored read-only copies under data/registers/ —
+never edited here; byte-identical to the frozen project-tree inputs,
+verified by tests/test_intelligence_lane7.py):
+
+  data/registers/dv-june-adjudicated.json              (691 day-events, Jun-Aug)
+  data/registers/lane4-reconciliation-round2.json      (131 rows: 88/11/32/3/7)
+  data/registers/lane4-timing-ledger.json              (observed Lane-4 effort)
+  data/registers/coverage-ledger.json
+  data/registers/adjudication-table.json               (Ajeez 2026-10-20 rulings)
+  data/ingested/matrix/June2026-adjudicated-v2.json    (135 rows, 123 COUNTED)
+  data/company_aliases.json                            (confirmed display map)
+
+Lane-7 currency: the suppliers + corrections views read the v2 ruled
+inputs above (no stale flag). The upcoming-plans + tool-problems views
+still read the pre-v2 day-event registers: the v2 rows carry no report
+context text (only 19 ruling excerpts), so plan/problem wording cannot
+be recomputed from v2 without silently dropping items — those two
+views stay stale-marked until a context-carrying v2 register exists.
 """
 
 from __future__ import annotations
@@ -35,16 +45,18 @@ from pathlib import Path
 
 # ---------------------------------------------------------------- roots
 
-_PLUGIN_DIR = Path(__file__).resolve().parent          # .../orio-operations-plugin/dashboard
-_PLUGIN_ROOT = _PLUGIN_DIR.parent                       # .../orio-operations-plugin
-_PROJECT_ROOT = _PLUGIN_ROOT.parent                     # .../Innovex (ajeez)
-_NOTES = _PROJECT_ROOT / '06_Working-Notes'
-_CLOSEOUT = _NOTES / 'reviews' / 'june-closeout-2026-10-19'
-_COVERAGE_LEDGER = (_NOTES / 'reviews' / 'june-ocr-coverage-2026-10-19'
-                    / 'coverage-ledger.json')
-_ADJUDICATED = _NOTES / 'dv-june-adjudicated.json'
-_RECONCILIATION = _CLOSEOUT / 'lane4-reconciliation-round2.json'
-_TIMING_LEDGER = _CLOSEOUT / 'lane4-timing-ledger.json'
+_PLUGIN_DIR = Path(__file__).resolve().parent          # .../euphoria-orio-operations/dashboard
+_PLUGIN_ROOT = _PLUGIN_DIR.parent                       # .../euphoria-orio-operations
+# Installed layout: frozen June registers ship inside the plugin
+# (data/registers/) so the live gateway never depends on the dev project tree.
+_REGISTERS = _PLUGIN_ROOT / 'data' / 'registers'
+_ADJUDICATED = _REGISTERS / 'dv-june-adjudicated.json'
+_RECONCILIATION = _REGISTERS / 'lane4-reconciliation-round2.json'
+_TIMING_LEDGER = _REGISTERS / 'lane4-timing-ledger.json'
+_COVERAGE_LEDGER = _REGISTERS / 'coverage-ledger.json'
+_ADJUDICATION_TABLE = _REGISTERS / 'adjudication-table.json'
+_ADJUDICATED_V2 = (_PLUGIN_ROOT / 'data' / 'ingested' / 'matrix'
+                   / 'June2026-adjudicated-v2.json')
 _ALIASES = _PLUGIN_ROOT / 'data' / 'company_aliases.json'
 _QUESTIONS = _PLUGIN_ROOT / 'data' / 'intelligence_questions.json'
 
@@ -479,6 +491,256 @@ def reviewer_corrections(reconciliation: dict, aliases: dict,
             'provisional_near matches excluded from correction candidacy '
             '(weak by construction)',
         ],
+    }
+
+
+# ------------------------------------------------- v2 ruled views (M4 re-point)
+
+V2_COVERAGE_LABEL = ('June adjudicated rows 2026-06-01..2026-06-30 '
+                     '(Ajeez-ruled 2026-10-20: 123 COUNTED; company-UNPROVEN '
+                     'rows count in size/location only; June-boundary rows '
+                     'flagged, never folded into July)')
+
+V2_SOURCE_NOTE = ('data/ingested/matrix/June2026-adjudicated-v2.json '
+                  '(same rows /matrix serves, provenance=adjudicated)')
+
+
+def _alias_display_map(aliases: dict) -> dict[str, str]:
+    """Canonical code -> FULL NAME (CODE) display; TAM stays 'TAM (TAM)'."""
+    amap = (aliases or {}).get('mapping', {})
+    display = {k: v.get('display', k) for k, v in amap.items()}
+    for k, v in amap.items():
+        for a in v.get('report_aliases', []) or []:
+            display.setdefault(a, v.get('display', k))
+    return display
+
+
+def suppliers_v2(adjudicated_v2: dict, aliases: dict) -> dict:
+    """First supplier appearances + repeat use from the v2 ruled rows.
+
+    COUNTED rows only — PENDING/EXCLUDED rows are not findings.
+    UNPROVEN-company rows never form a supplier (rules-v2 R1); their
+    count is disclosed, never silently dropped.
+    """
+    display = _alias_display_map(aliases)
+    rows = [r for r in adjudicated_v2.get('rows', [])
+            if r.get('status') == 'COUNTED']
+    norm: dict[str, dict] = {}
+    for r in rows:
+        owner = r.get('company')
+        if not owner or owner == 'UNPROVEN':
+            continue
+        slot = norm.setdefault(owner, {
+            'supplier_code': owner,
+            'first_observed_date': None,
+            'first_observed': None,
+            'observations': 0,
+            'rigs': set(),
+            'wells': set(),
+        })
+        slot['observations'] += 1
+        slot['rigs'].add(r.get('rig'))
+        slot['wells'].add(r.get('well'))
+        if (slot['first_observed_date'] is None
+                or (r.get('date') or '') < slot['first_observed_date']):
+            slot['first_observed_date'] = r.get('date')
+            slot['first_observed'] = {
+                'date': r.get('date'), 'rig': r.get('rig'),
+                'well': r.get('well'),
+                'company_display': display.get(owner, owner),
+                'source_file': r.get('source_file'),
+                'source_page': r.get('source_page'),
+                'authority': r.get('authority'),
+            }
+    out = []
+    for code in sorted(norm):
+        slot = norm[code]
+        out.append({
+            'supplier_code': code,
+            'supplier_display': display.get(code, code),
+            'wording': ('first observed in covered reports: '
+                        + str(slot['first_observed_date'])),
+            'first_observed': slot['first_observed'],
+            'repeat_use': {
+                'observations': slot['observations'],
+                'distinct_rigs': len(slot['rigs']),
+                'distinct_wells': len(slot['wells']),
+            },
+            'coverage': V2_COVERAGE_LABEL,
+        })
+    unproven = sum(1 for r in rows if r.get('company') == 'UNPROVEN')
+    return {
+        'feature': 'first-supplier-appearances-plus-repeat-use',
+        'evidence_status': 'implemented-on-real-evidence',
+        'source': V2_SOURCE_NOTE,
+        'fixture_sha256': adjudicated_v2.get('fixture_sha256'),
+        'status_counts': adjudicated_v2.get('status_counts'),
+        'coverage': V2_COVERAGE_LABEL,
+        'filters': 'June COUNTED rows; UNPROVEN company excluded',
+        'suppliers': out,
+        'unproven_company_rows': unproven,
+        'unproven_company_note': ('rows with company UNPROVEN are counted '
+                                  'in size/location totals only, never as '
+                                  'a supplier (rules-v2 R1)'),
+        'negative_cases': [
+            'UNPROVEN company (row 106: WDV Resp.Co code) excluded, '
+            'never assigned',
+            'PENDING_FILE / PENDING_RULING / EXCLUDED rows are not '
+            'findings and never fold into supplier counts',
+            'June-boundary rows stay June per ruling, flagged '
+            'june_boundary, never folded into July',
+        ],
+    }
+
+
+def corrections_v2(table: dict, aliases: dict, timing: dict) -> dict:
+    """Reviewer correction flow over Ajeez's 2026-10-20 adjudication.
+
+    Applied corrections carry the Sheet-1 original beside the ruled
+    value (history is never overwritten). Provisional rows are
+    candidates for human review only, never applied.
+    """
+    applied = []
+    for a in table.get('accepted_corrections', []):
+        job = a.get('job') or {}
+        page = a.get('page') or {}
+        applied.append({
+            'row': a.get('row'), 'field': a.get('field'),
+            'original_sheet1': a.get('sheet1_value'),
+            'adjudicated_value': a.get('adjudicated_value'),
+            'job': {'rig': job.get('rig'), 'well': job.get('well'),
+                    'rih_date': job.get('rih_date')},
+            'page': {'file': page.get('file'), 'page': page.get('page'),
+                     'report_date': page.get('report_date')},
+            'page_quote': a.get('page_quote'),
+            'episode': (a.get('episode') or {}).get('episode_id'),
+            'status': a.get('status'),
+            'history_preserved': True,
+        })
+    kept = []
+    for k in table.get('kept_at_tam', []):
+        job = k.get('job') or {}
+        page = k.get('page') or {}
+        kept.append({
+            'row': k.get('row'), 'rig': job.get('rig'),
+            'well': job.get('well'),
+            'sheet1_company': k.get('sheet1_company'),
+            'tool_brand': k.get('tool_brand'),
+            'work_marking': k.get('work_marking'),
+            'page': {'file': page.get('file'), 'page': page.get('page'),
+                     'report_date': page.get('report_date')},
+            'ruling': k.get('ruling'),
+            'history_preserved': True,
+        })
+    restored = []
+    for r in table.get('restored_unique_jobs', []):
+        job = r.get('job') or {}
+        page = r.get('page') or {}
+        restored.append({
+            'row': r.get('row'), 'rig': job.get('rig'),
+            'well': job.get('well'),
+            'rih_date': job.get('rih_date'),
+            'size': r.get('size'),
+            'size_provenance': r.get('size_provenance'),
+            'company': r.get('company'),
+            'company_note': r.get('company_note'),
+            'location': r.get('offshore_onshore'),
+            'page': {'file': page.get('file'),
+                     'pages': page.get('pages'),
+                     'report_date': page.get('report_date')},
+            'page_quote': r.get('page_quote'),
+            'status': r.get('status'),
+            'history_preserved': True,
+        })
+    provisional = []
+    for p in table.get('provisional_rows', []):
+        job = p.get('job') or {}
+        page = p.get('page') or {}
+        provisional.append({
+            'row': p.get('row'), 'rig': job.get('rig'),
+            'well': job.get('well'),
+            'sheet1_company': p.get('sheet1_company'),
+            'tool_brand': p.get('tool_brand'),
+            'work_marking': p.get('work_marking'),
+            'provisional_disposition': p.get('provisional_disposition'),
+            'page': {'file': page.get('file'), 'page': page.get('page'),
+                     'report_date': page.get('report_date')},
+            'status': p.get('status'),
+            'note': 'candidate for human review only, never auto-applied',
+            'history_preserved': True,
+        })
+    mapping = ((aliases or {}).get('mapping') or {})
+    alias_rules = [{
+        'code': code,
+        'display': spec.get('display'),
+        'report_aliases': spec.get('report_aliases', []),
+        'evidence': spec.get('evidence'),
+        'status': spec.get('status'),
+    } for code, spec in sorted(mapping.items())]
+    totals = (timing.get('totals') or {}) if isinstance(timing, dict) else {}
+    verdict = (timing.get('verdict') or {}) if isinstance(timing, dict) else {}
+    effort = {
+        'source': 'lane4-timing-ledger.json (observed, Lane-4 measured)',
+        'june_26_increment_s': totals.get('june26_increment_wall_s'),
+        'june_26_verdict': verdict.get('june26_increment'),
+        'full_corpus_s': totals.get('full_corpus_wall_s'),
+        'full_corpus_verdict': verdict.get('full_corpus'),
+        'coverage_note': verdict.get('coverage'),
+        'accuracy_note': verdict.get('accuracy'),
+        'v2_note': ('the v2 adjudication pass has no machine-observed '
+                    'timing; no timing is invented for it'),
+        'jev_cost_note': 'Lane-4 live Jev: 10/10 clusters, $0.0021; '
+                         'this lane adds $0.00 (no live model calls)',
+    }
+    basis = table.get('basis') or {}
+    return {
+        'feature': 'reviewer-correction-flow',
+        'evidence_status': 'implemented-on-real-evidence',
+        'source': ('data/registers/adjudication-table.json '
+                   '(Ajeez rulings 2026-10-20)'),
+        'coverage': V2_COVERAGE_LABEL,
+        'ruling': {'date': table.get('ruling_date'),
+                   'authority': table.get('ruling_authority'),
+                   'basis': basis},
+        'applied_corrections': applied,
+        'kept_at_tam': kept,
+        'restored_unique_jobs': restored,
+        'provisional_rows': provisional,
+        'codified_rules': table.get('codified_rules', []),
+        'totals': table.get('totals', {}),
+        'alias_rules': alias_rules,
+        'alias_reuse_tests': 'see tests/test_intelligence_lane7.py '
+                             '(positive: DAVIS LYNCH->FET, HLB->HAL, '
+                             'WFD->WEATHERFORD; negative: TAM never '
+                             'expanded, bare short forms never display)',
+        'effort_metrics': effort,
+        'negative_cases': [
+            'provisional rows are candidates, never applied findings',
+            'the recording\u2019s "two human errors" stay unidentified \u2014 '
+            'applied corrections are ruled changes, never identifications',
+            'V76/V108 additional runs excluded (unverified block-header '
+            'rig IDs)',
+        ],
+    }
+
+
+def build_bundle_v2() -> dict:
+    """Suppliers + corrections recomputed from the v2 ruled inputs."""
+    adjudicated_v2 = _load(_ADJUDICATED_V2)
+    table = _load(_ADJUDICATION_TABLE)
+    try:
+        aliases = _load(_ALIASES)
+    except OSError:
+        aliases = {'mapping': {}}
+    try:
+        timing = _load(_TIMING_LEDGER)
+    except OSError:
+        timing = {}
+    return {
+        'lane': 'LANE-7',
+        'scope': 'Ajeez-ruled June truth (2026-10-20); June accuracy first',
+        'suppliers': suppliers_v2(adjudicated_v2, aliases),
+        'corrections': corrections_v2(table, aliases, timing),
     }
 
 
